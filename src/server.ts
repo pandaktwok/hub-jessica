@@ -15,6 +15,9 @@ import {
   opcoesCookie,
 } from './auth.ts';
 import rotasSetup, { etapas, setupCompleto } from './rotas/setup.ts';
+import rotasConsultoria from './rotas/consultoria.ts';
+import rotasMentoradas from './rotas/mentoradas.ts';
+import rotasSkills from './rotas/skills.ts';
 
 const app = Fastify({
   logger: { level: process.env.LOG_NIVEL ?? 'info' },
@@ -130,6 +133,9 @@ app.get('/sair', async (req: any, res) => {
 // ------------------------------------------------------------------ assistente
 
 await app.register(rotasSetup);
+await app.register(rotasConsultoria);
+await app.register(rotasMentoradas);
+await app.register(rotasSkills);
 
 // ------------------------------------------------------------------ painel
 
@@ -175,15 +181,15 @@ app.get('/admin', async (req: any, res) => {
         </tbody></table>
       </div>
       <div class="cartao">
-        <h2>O que já dá para fazer</h2>
+        <h2>O que dá para fazer</h2>
         <ul class="lista-etapas">
+          <li><span class="marca">·</span><span><a href="/admin/mentoradas">Mentoradas</a> — cadastrar, gerar link e acompanhar onde cada uma está</span></li>
+          <li><span class="marca">·</span><span><a href="/admin/skills">Skills</a> — gerar a partir do seu material e revisar</span></li>
+          <li><span class="marca">·</span><span><a href="/setup/modulos">Módulos e material</a> — subir referências e ajustar instruções</span></li>
           <li><span class="marca">·</span><span><a href="/setup">Configuração inicial</a> — as nove etapas</span></li>
-          <li><span class="marca">·</span><span><a href="/setup/modulos">Módulos e material</a> — ajustar instruções e subir referências</span></li>
           <li><span class="marca">·</span><span><a href="/setup/precificacao">Custos e preço</a></span></li>
           <li><span class="marca">·</span><span><a href="/healthz">Saúde do sistema</a></span></li>
         </ul>
-        <p class="sub" style="margin-top:14px"><small>O cadastro de mentoradas e o formulário de
-          diagnóstico entram na próxima etapa de construção.</small></p>
       </div>
       <div class="passo-txt"><a href="/sair">Sair</a></div>`,
     ),

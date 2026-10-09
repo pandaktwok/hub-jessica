@@ -7,10 +7,10 @@ Diagnóstico que ela leva consigo.
 Roda em Docker. Postgres de banco. Sem dependência de serviço externo além do provedor
 de inteligência artificial que a mentora conecta.
 
-> **Estado: em construção.** O que está no ar hoje é o assistente de configuração
-> inicial, que é a parte que define a qualidade de todo o resto. O cadastro de mentoradas
-> e o formulário de diagnóstico são a próxima etapa. O que existe já roda, migra o banco
-> sozinho e pode ser instalado numa VPS.
+> **Estado.** O ciclo completo funciona ponta a ponta: a mentora configura, sobe o
+> material dela, gera as skills, cadastra uma mentorada, manda o link, e a mentorada
+> percorre os seis blocos até o Mapa. Falta o envio do link por e-mail, o PDF com o
+> Chromium invisível, a cobrança e a integração com o Second Brain.
 
 ---
 
@@ -64,6 +64,37 @@ Para gerar uma senha de banco:
 
 A etapa 7 é a calibragem: é ali que a inteligência artificial aprende a escrever no tom
 da mentora, a partir do material que ela sobe. Tudo o mais é encanamento em volta disso.
+
+---
+
+## A consultoria
+
+Depois da configuração, em `/admin/mentoradas` a mentora cadastra uma mentorada e gera um
+link de acesso. O link vale 30 minutos e um acesso só; depois que ela entra, a sessão dura
+duas semanas. O envio por e-mail ainda não está ligado, então por enquanto é copiar e
+mandar pelo canal que já se usa com ela.
+
+A mentorada percorre seis blocos. Em cada um:
+
+1. Responde as perguntas daquele bloco, com salvamento automático e exemplo real em cada
+   campo. Pode parar e voltar.
+2. Ao concluir, vê a tela de geração — que mostra **as próprias respostas dela** enquanto
+   o rascunho é montado, em vez de um girador. Passando de 45 segundos aparece a saída.
+3. Lê o rascunho, com o aviso de que é rascunho **acima** do texto na ordem do documento,
+   não só visualmente.
+4. Edita o que não soar como ela, ou pede outro rascunho. O que vale é a versão dela.
+
+Cada bloco carrega o contexto dos anteriores, com orçamento de tamanho para o módulo 6 não
+estourar o tempo. No fim, o Mapa consolida tudo num documento que ela imprime ou salva.
+
+### Gerar as skills a partir do material
+
+Em `/admin/skills`, módulo por módulo, o sistema lê o material que a mentora subiu e extrai
+de dois a cinco procedimentos, escritos como instruções que alguém conseguiria seguir. Ela
+lê, ajusta e marca como revisada.
+
+Essas skills saem de um modelo que não sabe para onde elas vão — isso é deliberado, para
+não enviesar a extração. Há uma revisão pendente registrada em `docs/REVISAR-SKILLS.md`.
 
 ---
 
