@@ -106,11 +106,11 @@ export default async function rotasMentoradas(app: FastifyInstance) {
         WHERE NOT EXISTS (SELECT 1 FROM diagnosticos WHERE mentorada_id=$1 AND concluido_em IS NULL)`,
       [m!.id],
     );
-    return res.redirect(`/admin/mentoradas/${m!.id}/link`);
+    return res.redirect(`/admin/mentoradas/${m!.id}`);
   });
 
   // ----------------------------------------------------------- link de acesso
-  app.get<{ Params: { id: string } }>('/admin/mentoradas/:id/link', async (req: any, res) => {
+  app.post<{ Params: { id: string } }>('/admin/mentoradas/:id/link', async (req: any, res) => {
     if (!exige(req, res)) return;
     const m = await um<{ nome: string; email: string }>(
       'SELECT nome, email FROM mentoradas WHERE id = $1',
@@ -140,7 +140,10 @@ export default async function rotasMentoradas(app: FastifyInstance) {
             é copiar e mandar pelo canal que você já usa com ela.</small></p>
           <div class="acoes">
             <a class="botao" href="/admin/mentoradas">Voltar para a lista</a>
-            <a class="botao calmo" href="/admin/mentoradas/${esc(req.params.id)}/link">Gerar outro link</a>
+            <form method="post" action="/admin/mentoradas/${esc(req.params.id)}/link" style="display:inline">
+              <button type="submit" class="botao calmo"
+                style="background:transparent;color:var(--tinta);border-color:var(--linha)">Gerar outro link</button>
+            </form>
           </div>
         </div>`,
       ),
@@ -211,7 +214,9 @@ export default async function rotasMentoradas(app: FastifyInstance) {
           </tbody></table>
         </div>
         <div class="acoes">
-          <a class="botao" href="/admin/mentoradas/${esc(m.id)}/link">Gerar link de acesso</a>
+          <form method="post" action="/admin/mentoradas/${esc(m.id)}/link" style="display:inline">
+            <button type="submit">Gerar link de acesso</button>
+          </form>
           <a class="botao calmo" href="/admin/mentoradas">Voltar</a>
         </div>`,
       ),

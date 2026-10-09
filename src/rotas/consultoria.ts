@@ -342,7 +342,8 @@ export default async function rotasConsultoria(app: FastifyInstance) {
                   nada se perdeu.</p>`
           }
           <div class="acoes">
-            ${bloqueio ? '' : `<a class="botao" href="/c/modulo/${n}/regerar">Tentar de novo</a>`}
+            ${bloqueio ? '' : `<form method="post" action="/c/modulo/${n}/regerar" style="display:inline">
+              <button type="submit">Tentar de novo</button></form>`}
             <a class="botao calmo" href="/c">Voltar para a lista</a>
           </div>
         </div>`,
@@ -404,8 +405,11 @@ export default async function rotasConsultoria(app: FastifyInstance) {
                   ${camposEditaveis(conteudo)}
                   <div class="acoes">
                     <button type="submit">Está bom, seguir</button>
-                    <a class="botao calmo" href="/c/modulo/${n}/regerar">Montar outro rascunho</a>
                   </div>
+                </form>
+                <form method="post" action="/c/modulo/${n}/regerar">
+                  <div class="acoes"><button type="submit" class="botao calmo"
+                    style="background:transparent;color:var(--tinta);border-color:var(--linha)">Montar outro rascunho</button></div>
                 </form>
               </div>`
         }
@@ -444,7 +448,7 @@ export default async function rotasConsultoria(app: FastifyInstance) {
     },
   );
 
-  app.get<{ Params: { n: string } }>('/c/modulo/:n/regerar', async (req: any, res) => {
+  app.post<{ Params: { n: string } }>('/c/modulo/:n/regerar', async (req: any, res) => {
     const s = await sessao(req.cookies?.[COOKIE]);
     if (!s) return res.code(401).type('text/html').send(semSessao());
     const n = Number(req.params.n);

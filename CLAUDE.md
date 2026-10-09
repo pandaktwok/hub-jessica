@@ -95,6 +95,17 @@ Método, 4 Precificação Sugerida, 5 Protocolos e Ofertas, 6 Posicionamento em 
 A faixa de mercado do módulo 4 **é informada pela própria mentorada**, numa pergunta de
 entrada. A IA não tem outra fonte e não deve inventar uma.
 
+## GET nunca muda estado
+
+Isto já quebrou uma vez em produção: a rota `/setup/skills/pular` era GET, e um
+pré-carregamento de link do navegador marcou a etapa como pulada sozinho, numa instalação
+recém-subida. As irmãs dela eram piores — apagar material, descartar as edições de prompt
+da mentora e disparar geração paga, todas por GET.
+
+Toda rota que escreve no banco, apaga arquivo, emite token ou chama a IA é **POST**, com
+formulário. Rastreador, antivírus, pré-carregamento e visualização de link disparam GET
+sem ninguém clicar.
+
 ## Decisões de implementação que têm motivo
 
 **Prompts e perguntas são dados, não código.** Duas camadas: `texto_fabrica` vem na

@@ -296,12 +296,15 @@ export default async function rotasSetup(app: FastifyInstance) {
 resumir-pdf — resume um documento longo"></textarea></div>
           ${botoes('/setup', 'Registrar skills')}
         </form>
-        <div class="acoes"><a class="botao calmo" href="/setup/skills/pular">Pular esta etapa</a></div>`,
+        <form method="post" action="/setup/skills/pular">
+          <div class="acoes"><button type="submit" class="botao calmo"
+            style="background:transparent;color:var(--tinta);border-color:var(--linha)">Pular esta etapa</button></div>
+        </form>`,
       ),
     );
   });
 
-  app.get('/setup/skills/pular', async (_req, res) => {
+  app.post('/setup/skills/pular', async (_req, res) => {
     await concluir('skills', { pulada: true });
     return res.redirect('/setup');
   });
@@ -493,7 +496,10 @@ resumir-pdf — resume um documento longo"></textarea></div>
     const listaMat = mats.length
       ? `<table><thead><tr><th>Material</th><th>Tipo</th><th></th></tr></thead><tbody>
           ${mats.map((m) => `<tr><td>${esc(m.nome)}</td><td><small>${esc(m.tipo)}</small></td>
-            <td><a href="/setup/modulos/${n}/remover/${esc(m.id)}">remover</a></td></tr>`).join('')}
+            <td><form method="post" action="/setup/modulos/${n}/remover/${esc(m.id)}" style="display:inline">
+              <button type="submit" style="background:none;border:0;color:var(--acento);padding:0;
+                min-height:0;font-size:15px;text-decoration:underline;cursor:pointer">remover</button>
+            </form></td></tr>`).join('')}
         </tbody></table>`
       : '<p class="sub">Nenhum material ainda.</p>';
 
@@ -530,9 +536,12 @@ resumir-pdf — resume um documento longo"></textarea></div>
                 </div>
                 <div class="acoes">
                   <button type="submit">Salvar instruções</button>
-                  ${prompt.texto_mentora ? `<a class="botao calmo" href="/setup/modulos/${n}/restaurar">Voltar ao texto de fábrica</a>` : ''}
                 </div>
-              </form>`
+              </form>
+              ${prompt.texto_mentora ? `<form method="post" action="/setup/modulos/${n}/restaurar">
+                <div class="acoes"><button type="submit" class="botao calmo"
+                  style="background:transparent;color:var(--tinta);border-color:var(--linha)">Voltar ao texto de fábrica</button></div>
+              </form>` : ''}`
             : ''
         }
         ${listaPerg}
@@ -633,7 +642,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
     return res.redirect(`/setup/modulos/${n}`);
   });
 
-  app.get<{ Params: { n: string; id: string } }>('/setup/modulos/:n/remover/:id', async (req, res) => {
+  app.post<{ Params: { n: string; id: string } }>('/setup/modulos/:n/remover/:id', async (req, res) => {
     await q('DELETE FROM materiais WHERE id = $1', [req.params.id]);
     return res.redirect(`/setup/modulos/${Number(req.params.n)}`);
   });
@@ -651,7 +660,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
     },
   );
 
-  app.get<{ Params: { n: string } }>('/setup/modulos/:n/restaurar', async (req, res) => {
+  app.post<{ Params: { n: string } }>('/setup/modulos/:n/restaurar', async (req, res) => {
     const n = Number(req.params.n);
     await q('UPDATE prompts SET texto_mentora = NULL, atualizado = now() WHERE slug = $1', [`modulo-${n}`]);
     return res.redirect(`/setup/modulos/${n}`);
