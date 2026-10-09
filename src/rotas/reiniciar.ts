@@ -4,9 +4,11 @@ import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pool, lerConfig } from '../db.ts';
 import { molde } from './setup.ts';
+import { pagina } from '../visao/layout.ts';
+import { COOKIE_MENTORA } from '../auth.ts';
 
 // Botão "Reiniciar teste". Apaga o que o teste produziu e volta o assistente ao começo,
-// mantendo a conta da mentora, a conexão da IA e o conteúdo de fábrica (perguntas e prompts).
+// apagando também a conta da mentora (o cadastro recomeça do zero), mantendo a conexão da IA e o conteúdo de fábrica (perguntas e prompts).
 // A senha vem do ambiente (SENHA_REINICIAR), nunca do código: o repositório é público.
 const tentativas: number[] = [];
 
@@ -29,7 +31,7 @@ export default async function rotasReiniciar(app: FastifyInstance) {
         ligado
           ? `<div class="aviso"><strong>Isto apaga tudo o que o teste produziu:</strong> mentoradas e diagnósticos,
               respostas de exemplo dos módulos, PDFs de exemplo, documentos enviados, skills geradas, perfil,
-              preço e a pasta escolhida. Fica só a conta de acesso, a conexão da IA e as perguntas de fábrica.
+              preço e a pasta escolhida. Apaga também a sua conta de acesso: depois você cria a conta de novo, na primeira etapa. Ficam só a conexão da IA e as perguntas de fábrica.
               Não dá para desfazer.</div>
             <form method="post" action="/reiniciar">
               <div class="campo"><label for="senha">Senha para reiniciar</label>
@@ -70,7 +72,8 @@ export default async function rotasReiniciar(app: FastifyInstance) {
       await c.query('TRUNCATE exemplos, exemplo_saidas, materiais, skills');
       await c.query("UPDATE prompts SET texto_mentora = NULL, versao_mentora = 0");
       await c.query("DELETE FROM config WHERE chave IN ('perfil','precificacao','precificacao_v2','pasta_pc','consentimento_textos','consentimento_versao')");
-      await c.query("UPDATE setup_etapas SET concluida = false, concluida_em = NULL, dados = '{}'::jsonb WHERE slug <> 'conta'");
+      await c.query('TRUNCATE mentora CASCADE');
+      await c.query("UPDATE setup_etapas SET concluida = false, concluida_em = NULL, dados = '{}'::jsonb");
       await c.query('COMMIT');
     } catch (e) {
       await c.query('ROLLBACK');
@@ -82,10 +85,13 @@ export default async function rotasReiniciar(app: FastifyInstance) {
     const base = (await lerConfig<{ caminho: string }>('armazenamento'))?.caminho ?? '/dados/acervo';
     await rm(join(base, 'materiais'), { recursive: true, force: true }).catch(() => {});
 
+    res.clearCookie(COOKIE_MENTORA, { path: '/' });
     return res.type('text/html').send(
-      molde(0, 'Teste reiniciado',
-        `<div class="ok">Tudo apagado. O assistente voltou ao começo.</div>
-         <div class="acoes"><a class="botao" href="/setup">Começar de novo</a></div>`),
+      pagina(
+        { titulo: 'Teste reiniciado', capa: { selo: 'Hub de Diagnóstico', titulo: 'Teste reiniciado' } },
+        `<div class="cartao"><div class="ok">Tudo apagado, inclusive a conta. O assistente voltou ao começo.</div>
+         <div class="acoes"><a class="botao" href="/setup/conta">Criar a conta de novo</a></div></div>`,
+      ),
     );
   });
 }
