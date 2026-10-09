@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B · Prontuário</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+:root{
+  --bg:#2A2A28; --panel:#F6F5F2; --ink:#E9E8E4; --soft:#A8A69F; --faint:#7C7A73;
+  --line:rgba(255,255,255,.10);
+  --pink:#33322F; --pl:#DFDDD6; --pi:#33322F; --ps:#6E6C65; --pf:#9B988F;
+}
+:root:not([data-theme="light"]){}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.stage{background:radial-gradient(circle at 50% 48%,#333330 0%,#2A2A28 60%,#232320 100%)}
+.tip{background:rgba(20,20,19,.95);color:var(--ink);border:1px solid var(--line)}
+.tip small{color:var(--soft)}
+.panel{background:var(--panel);color:var(--pi);border-left:1px solid #1C1C1A}
+.brand h1{color:var(--pi);font-weight:600} .brand p{color:var(--pf);letter-spacing:2.2px}
+.search input{background:#fff;border:1px solid var(--pl);color:var(--pi);font-family:inherit}
+.search input::placeholder{color:var(--pf)}
+.search input:focus{border-color:#4A90D9}
+.sec{color:var(--pf)}
+.chip{background:#fff;border:1px solid var(--pl);color:var(--pi)}
+.chip:hover{border-color:#4A90D9}
+.meter-top{color:var(--ps)} .meter-top span:last-child{color:var(--pf)}
+.track{background:var(--pl)}
+.hr{background:var(--pl)}
+.p-top>div:not(:last-child){padding-bottom:16px;border-bottom:1px solid var(--pl)}
+.preview{border-top:2px solid var(--pi);background:#fff}
+.pv-head{border-bottom:1px solid var(--pl)}
+.pv-kicker{color:var(--pf)} .pv-meta{color:var(--pf)} .pv-body{color:var(--ps)}
+.pv-empty{color:var(--pf)}
+.pv-btn{background:#fff;border:1px solid var(--pl);color:var(--pi)}
+.pv-btn:hover{border-color:#4A90D9}
+.ring-label,.node-label{fill:var(--faint)}
+.cat-label{font-weight:500}
+</style></head><body>
+<div class="app">
+  <div class="stage"><svg id="sky" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside class="panel">
+    <div class="p-top">
+      <div class="brand"><h1>Hub Jessica</h1><p>Second Brain</p></div>
+      <div class="search"><input placeholder="Buscar arquivos e skills…"></div>
+      <div><div class="sec">Ações rápidas</div><div class="chips">
+        <button class="chip">Limpar memória</button><button class="chip">Reindexar</button>
+        <button class="chip">Resumo</button><button class="chip">Sincronizar</button></div></div>
+      <div><div class="sec">Uso de modelo</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>Opus</span><span>52%</span></div><div class="track"><div class="fill" style="width:52%;background:#4A90D9"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Sonnet</span><span>38%</span></div><div class="track"><div class="fill" style="width:38%;background:#52B788"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Haiku</span><span>10%</span></div><div class="track"><div class="fill" style="width:10%;background:#E9A23B"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Tokens</span><span>1,8 M</span></div><div class="track"><div class="fill" style="width:61%;background:#E06B6B"></div></div></div>
+      </div></div>
+      <div><div class="sec">Sistema</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>RAM</span><span>4,2/16 GB</span></div><div class="track"><div class="fill" style="width:26%;background:#8B8880"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Disco</span><span>232/500</span></div><div class="track"><div class="fill" style="width:46%;background:#8B8880"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>CPU</span><span>18%</span></div><div class="track"><div class="fill" style="width:18%;background:#8B8880"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Índice</span><span>1.247</span></div><div class="track"><div class="fill" style="width:94%;background:#8B8880"></div></div></div>
+      </div></div>
+    </div>
+    <div class="preview" id="preview"><div class="pv-empty">Selecione um ponto para<br>abrir o registro</div></div>
+  </aside>
+</div>
+<div class="tip" id="tip"></div>
+<script src="engine.js"></script>
+<script>
+const T={
+  geo:{nucleus:46,gap:42,step:8.5,arc:7.4},
+  dots:{skills:5.5,memory:2.6,routines:6,apps:6.5},
+  labels:{skills:false,outer:true},
+  ticks:false, magnitude:false, halo:false, sunRule:false, handDrawn:false, orbitWidth:1,
+  c:{bg:'#2A2A28',orbit:'rgba(255,255,255,.09)',orbitStrong:'rgba(255,255,255,.17)',
+     sun:'#F0EFEB',sunInk:'#2A2A28',skills:'#E9A23B',routines:'#52B788',apps:'#9AA7B5',
+     cat:{business:'#4A90D9',content:'#E06B6B',personal:'#52B788',community:'#B08BD9'}}
+};
+renderOrbital(document.getElementById('sky'),T);
+wireInteraction(document.getElementById('sky'),document.getElementById('tip'),document.getElementById('preview'),T);
+</script></body></html>

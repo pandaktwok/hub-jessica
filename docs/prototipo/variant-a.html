@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A · Carta Celeste</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+:root{
+  --bg:#0B1220; --panel:#0E1729; --ink:#DDE5F2; --soft:#8C9BB5; --faint:#5C6B85;
+  --line:rgba(190,205,230,.14); --sun:#E8C978;
+}
+:root:not([data-theme="light"]){}
+body{font-family:'Spectral',Georgia,serif;background:var(--bg);color:var(--ink)}
+.stage{background:radial-gradient(circle at 50% 46%,#121D33 0%,#0B1220 55%,#070C16 100%)}
+.tip{background:rgba(8,14,26,.96);color:var(--ink);border:1px solid var(--line)}
+.tip small{color:var(--faint)}
+.panel{background:var(--panel);border-left:1px solid var(--line);
+  box-shadow:inset 3px 0 0 -1px rgba(232,201,120,.25)}
+.brand h1{font-weight:600;letter-spacing:.3px}
+.brand p{color:var(--sun);opacity:.75}
+.search input{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--ink);font-family:inherit}
+.search input::placeholder{color:var(--faint)}
+.search input:focus{border-color:rgba(232,201,120,.5)}
+.sec{color:var(--faint);border-bottom:1px solid var(--line);padding-bottom:5px}
+.chip{background:transparent;border:1px solid var(--line);color:var(--soft)}
+.chip:hover{border-color:rgba(232,201,120,.55);color:var(--ink)}
+.meter-top{color:var(--soft)} .meter-top span:last-child{color:var(--faint)}
+.track{background:rgba(255,255,255,.07)}
+.hr{background:var(--line)}
+.preview{border-top:1px solid var(--line);background:rgba(255,255,255,.02)}
+.pv-head{border-bottom:1px solid var(--line)}
+.pv-kicker{color:var(--faint)} .pv-meta{color:var(--faint)} .pv-body{color:var(--soft)}
+.pv-empty{color:var(--faint)}
+.pv-btn{background:transparent;border:1px solid var(--line);color:var(--soft)}
+.pv-btn:hover{border-color:rgba(232,201,120,.55);color:var(--ink)}
+.ring-label,.node-label{fill:var(--faint)}
+.ring-label{letter-spacing:3px}
+.sun-label,.sun-sub{font-family:'Spectral',serif}
+</style></head><body>
+<div class="app">
+  <div class="stage"><svg id="sky" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside class="panel">
+    <div class="p-top">
+      <div class="brand"><h1>Hub Jessica</h1><p>Second Brain</p></div>
+      <div class="search"><input placeholder="Buscar arquivos e skills…"></div>
+      <div><div class="sec">Ações rápidas</div><div class="chips">
+        <button class="chip">Limpar memória</button><button class="chip">Reindexar</button>
+        <button class="chip">Resumo</button><button class="chip">Sincronizar</button></div></div>
+      <div><div class="sec">Uso de modelo</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>Opus</span><span>52%</span></div><div class="track"><div class="fill" style="width:52%;background:#E8C978"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Sonnet</span><span>38%</span></div><div class="track"><div class="fill" style="width:38%;background:#8FB3D9"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Haiku</span><span>10%</span></div><div class="track"><div class="fill" style="width:10%;background:#9BC4A8"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Tokens</span><span>1,8 M</span></div><div class="track"><div class="fill" style="width:61%;background:#C0A6D9"></div></div></div>
+      </div></div>
+      <div><div class="sec">Sistema</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>RAM</span><span>4,2/16</span></div><div class="track"><div class="fill" style="width:26%;background:#7E8DA8"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Disco</span><span>232/500</span></div><div class="track"><div class="fill" style="width:46%;background:#7E8DA8"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>CPU</span><span>18%</span></div><div class="track"><div class="fill" style="width:18%;background:#7E8DA8"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Índice</span><span>1.247</span></div><div class="track"><div class="fill" style="width:94%;background:#7E8DA8"></div></div></div>
+      </div></div>
+    </div>
+    <div class="preview" id="preview"><div class="pv-empty">Clique em um ponto da carta<br>para abrir o arquivo</div></div>
+  </aside>
+</div>
+<div class="tip" id="tip"></div>
+<script src="engine.js"></script>
+<script>
+const T={
+  geo:{nucleus:44,gap:42,step:8.5,arc:7.4},
+  dots:{skills:5,memory:2.5,routines:5.5,apps:6},
+  labels:{skills:false,outer:true},
+  ticks:true, magnitude:true, halo:true, sunRule:true, handDrawn:false, orbitWidth:1,
+  c:{bg:'#0B1220',orbit:'rgba(190,205,230,.13)',orbitStrong:'rgba(190,205,230,.26)',
+     sun:'#E8C978',sunInk:'#2A2011',skills:'#E8C978',routines:'#9BC4A8',apps:'#8FB3D9',
+     cat:{business:'#8FB3D9',content:'#E0A96D',personal:'#9BC4A8',community:'#B9A3D9'}}
+};
+renderOrbital(document.getElementById('sky'),T);
+wireInteraction(document.getElementById('sky'),document.getElementById('tip'),document.getElementById('preview'),T);
+</script></body></html>

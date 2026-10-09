@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Design Shotgun · Hub Jessica</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --ink:#2C2A26; --soft:#6B665E; --faint:#9C958A;
+  --line:#E0DAD0; --accent:#B5653A;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#16171A; --card:#1D1F23; --ink:#E6E3DD; --soft:#9C968C; --faint:#6E6862;
+    --line:#2C2F34; --accent:#D4835A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16171A; --card:#1D1F23; --ink:#E6E3DD; --soft:#9C968C; --faint:#6E6862;
+  --line:#2C2F34; --accent:#D4835A;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:1420px;margin:0 auto;padding:32px 16px 64px}
+
+header{margin-bottom:26px;max-width:720px}
+.eyebrow{font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:26px;font-weight:600;letter-spacing:-.4px;margin-top:8px}
+.lede{font-size:14px;line-height:1.6;color:var(--soft);margin-top:10px}
+.note{font-size:12px;line-height:1.6;color:var(--faint);margin-top:12px;
+  border-left:2px solid var(--line);padding-left:12px}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+@media(max-width:940px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--accent)}
+.card-head{padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.card-top{display:flex;align-items:baseline;gap:9px}
+.letter{width:22px;height:22px;border-radius:5px;background:var(--accent);color:#fff;
+  font-size:11px;font-weight:600;display:grid;place-items:center;flex-shrink:0}
+.card-name{font-size:15px;font-weight:600}
+.card-desc{font-size:12px;line-height:1.55;color:var(--soft);margin-top:7px}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.tag{font-size:10px;padding:2px 7px;border:1px solid var(--line);border-radius:10px;color:var(--faint)}
+
+.frame{position:relative;height:340px;overflow:hidden;background:#000;cursor:pointer}
+.frame iframe{width:1400px;height:875px;border:0;transform:scale(.4);transform-origin:top left;
+  pointer-events:none}
+.frame::after{content:'Abrir em tela cheia';position:absolute;inset:auto 0 0 0;
+  padding:8px;text-align:center;font-size:11px;font-weight:500;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.75));opacity:0;transition:opacity .2s}
+.frame:hover::after{opacity:1}
+
+.card-foot{padding:11px 16px;display:flex;gap:7px;align-items:center;border-top:1px solid var(--line)}
+.btn{flex:1;padding:7px;font-size:11.5px;font-family:inherit;background:transparent;
+  border:1px solid var(--line);border-radius:5px;color:var(--ink);cursor:pointer;transition:all .18s}
+.btn:hover{border-color:var(--accent)}
+.btn.pick{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pick:hover{filter:brightness(1.08)}
+
+.overlay{position:fixed;inset:0;background:#000;z-index:100;display:none}
+.overlay.on{display:block}
+.overlay iframe{width:100%;height:100%;border:0}
+.close{position:fixed;top:14px;right:16px;z-index:101;padding:7px 13px;font-size:12px;
+  font-family:inherit;background:rgba(255,255,255,.92);border:0;border-radius:6px;
+  color:#1a1a1a;cursor:pointer;font-weight:500}
+
+.picked{margin-top:26px;padding:16px;border:1px solid var(--line);border-radius:9px;
+  background:var(--card);font-size:13px;line-height:1.6;color:var(--soft);display:none}
+.picked.on{display:block}
+.picked b{color:var(--ink)}
+</style></head><body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Design Shotgun · gstack</div>
+    <h1>Hub Jessica — quatro direções para o Second Brain</h1>
+    <p class="lede">Mesma tela, mesma estrutura orbital, mesmos 1.247 arquivos. O que muda é a
+    personalidade visual: tipografia, paleta e tratamento de traço. As quatro estão vivas,
+    então passe o mouse nos pontos e clique para abrir um arquivo no painel.</p>
+    <p class="note">A geometria é idêntica nas quatro e segue a regra combinada: núcleo ao centro,
+    distância igual entre cada camada, e quando um anel lota abre outro logo abaixo sem encostar
+    no núcleo. As memórias ocupam um cinturão de dez sub-anéis porque são 1.247 pontos, um por arquivo.</p>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="picked" id="picked"></div>
+</div>
+
+<div class="overlay" id="ov"><iframe id="ovf"></iframe></div>
+<button class="close" id="close" style="display:none">Fechar ✕</button>
+
+<script>
+const VARIANTS = [
+  { k:'A', file:'variant-a.html', name:'Carta Celeste',
+    desc:'Observatório clássico. Azul-noite profundo, tipografia serifada de cartografia, órbitas com marcações de grau e pontos como estrelas de magnitude variável.',
+    tags:['Spectral serif','Azul-noite','Ticks de grau','Magnitude estelar'] },
+  { k:'B', file:'variant-b.html', name:'Prontuário',
+    desc:'Precisão clínica suíça. Grafite quente no palco e painel claro à direita, grotesca leve, traço sem nenhum ornamento. Fala a língua visual do público dela.',
+    tags:['Inter','Painel claro','Zero ornamento','Paleta de diagnóstico'] },
+  { k:'C', file:'variant-c.html', name:'Ateliê',
+    desc:'Editorial e quente. Marrom-carvão com grão de papel, serifada humanista, órbitas com traço irregular de nanquim. Menos sistema, mais biblioteca pessoal.',
+    tags:['Lora','Traço de nanquim','Grão de papel','Terroso'] },
+  { k:'D', file:'variant-d.html', name:'Instrumento',
+    desc:'Painel de precisão. Quase-preto azulado, mono nos números, hachuras nas órbitas, densidade alta e figuras à mostra. Para ver o mecanismo, não a metáfora.',
+    tags:['IBM Plex Mono','Alta densidade','Números visíveis','Saturação alta'] },
+];
+
+const grid = document.getElementById('grid');
+VARIANTS.forEach(v => {
+  const c = document.createElement('div');
+  c.className = 'card';
+  c.innerHTML = `
+    <div class="card-head">
+      <div class="card-top"><span class="letter">${v.k}</span><span class="card-name">${v.name}</span></div>
+      <div class="card-desc">${v.desc}</div>
+      <div class="tags">${v.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+    <div class="frame" data-file="${v.file}"><iframe src="${v.file}" loading="lazy" title="${v.name}"></iframe></div>
+    <div class="card-foot">
+      <button class="btn open" data-file="${v.file}">Tela cheia</button>
+      <button class="btn pick" data-k="${v.k}" data-name="${v.name}">Escolher ${v.k}</button>
+    </div>`;
+  grid.appendChild(c);
+});
+
+const ov = document.getElementById('ov'), ovf = document.getElementById('ovf'), close = document.getElementById('close');
+function openFull(file){ ovf.src = file; ov.classList.add('on'); close.style.display='block'; }
+function closeFull(){ ov.classList.remove('on'); close.style.display='none'; ovf.src=''; }
+close.addEventListener('click', closeFull);
+addEventListener('keydown', e => { if(e.key==='Escape') closeFull(); });
+
+document.addEventListener('click', e => {
+  const f = e.target.closest('.frame'); if (f) return openFull(f.dataset.file);
+  const o = e.target.closest('.open'); if (o) return openFull(o.dataset.file);
+  const p = e.target.closest('.pick');
+  if (p) {
+    const box = document.getElementById('picked');
+    box.innerHTML = `<b>Escolhido: ${p.dataset.k} — ${p.dataset.name}.</b> Me diga aqui no chat
+      o que manter e o que ajustar (cor, fonte, densidade, o que estiver incomodando) e eu itero
+      em cima desta direção. Se quiser misturar, vale dizer coisas como "layout do B com a paleta do C".`;
+    box.classList.add('on');
+    box.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+});
+</script>
+</body></html>

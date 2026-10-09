@@ -1,0 +1,72 @@
+/* estrutura comum às 4 variantes — a estética fica em cada variante */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{overflow:hidden;-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh}
+
+.stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
+.stage svg{width:min(100%,900px);height:min(100%,900px);display:block}
+
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes spinBack{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+@keyframes halo{0%,100%{opacity:.45}50%{opacity:.85}}
+.ring{transform-origin:400px 400px;will-change:transform}
+.r-skills{animation:spin 200s linear infinite}
+.r-memory{animation:spin 420s linear infinite}
+.r-routines{animation:spinBack 560s linear infinite}
+.r-apps{animation:spin 760s linear infinite}
+.c-skills{animation:spinBack 200s linear infinite}
+.c-routines{animation:spin 560s linear infinite}
+.c-apps{animation:spinBack 760s linear infinite}
+.sun-halo{animation:halo 8s ease-in-out infinite}
+
+.dot{cursor:pointer}
+.dot:hover{stroke:#fff;stroke-width:1.5}
+.dot.sel{stroke:#fff;stroke-width:2}
+
+.tip{position:fixed;pointer-events:none;z-index:50;border-radius:5px;padding:6px 9px;
+  font-size:11px;line-height:1.45;opacity:0;transition:opacity .12s;max-width:250px}
+
+/* painel */
+.panel{width:302px;flex-shrink:0;display:flex;flex-direction:column}
+.p-top{padding:20px 18px 0;display:flex;flex-direction:column;gap:18px}
+.brand h1{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.brand p{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.search{position:relative}
+.search input{width:100%;padding:8px 10px;border-radius:5px;font-family:inherit;font-size:12px}
+.search input:focus{outline:none}
+.sec{font-size:8.5px;letter-spacing:1.6px;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:4px 9px;font-size:10.5px;font-family:inherit;border-radius:11px;cursor:pointer;transition:all .18s}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.meter{display:flex;flex-direction:column;gap:3px}
+.meter-top{display:flex;justify-content:space-between;font-size:10.5px}
+.meter-top span:last-child{font-size:9.5px;font-variant-numeric:tabular-nums}
+.track{height:3px;border-radius:2px;overflow:hidden}
+.fill{height:100%;border-radius:2px}
+.hr{height:1px}
+
+.preview{flex:1;min-height:0;margin-top:16px;display:flex;flex-direction:column}
+.pv-head{padding:13px 18px 9px}
+.pv-kicker{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1.3px;text-transform:uppercase;font-weight:600}
+.pv-kicker .swatch{width:7px;height:7px;border-radius:50%}
+.pv-title{font-size:13px;font-weight:600;margin-top:6px;line-height:1.35;word-break:break-word}
+.pv-meta{font-size:10px;margin-top:4px;font-variant-numeric:tabular-nums}
+.pv-body{padding:11px 18px 16px;overflow-y:auto;font-size:11.5px;line-height:1.6;flex:1}
+.pv-body::-webkit-scrollbar{width:4px}
+.pv-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:24px;font-size:11px;line-height:1.5}
+.pv-actions{display:flex;gap:6px;padding:0 18px 14px}
+.pv-btn{flex:1;padding:6px;font-size:10.5px;font-family:inherit;border-radius:4px;cursor:pointer;transition:all .18s}
+
+.ring-label{font-size:8.5px;letter-spacing:2.4px;text-transform:uppercase;font-weight:500}
+.node-label{font-size:8.5px}
+.cat-label{font-size:9.5px;font-weight:600}
+.sun-label{font-size:11px;font-weight:600;letter-spacing:1.4px}
+.sun-sub{font-size:7.5px;letter-spacing:1.2px;opacity:.7}
+
+@media(max-width:900px){
+  .app{flex-direction:column}
+  .panel{width:100%}
+  .stage{min-height:54vh}
+}

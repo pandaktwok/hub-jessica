@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C · Ateliê</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+:root{
+  --bg:#2B2320; --panel:#332A26; --ink:#EDE3D8; --soft:#B3A192; --faint:#8A7768;
+  --line:rgba(237,227,216,.14); --accent:#C97B4A;
+}
+:root:not([data-theme="light"]){}
+body{font-family:'Lora',Georgia,serif;background:var(--bg);color:var(--ink)}
+.stage{position:relative;background:radial-gradient(circle at 50% 45%,#3A302B 0%,#2B2320 58%,#241D1A 100%)}
+.stage::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.05;
+  background-image:radial-gradient(#EDE3D8 .5px,transparent .5px);background-size:3px 3px}
+.tip{background:rgba(26,20,17,.96);color:var(--ink);border:1px solid var(--line)}
+.tip small{color:var(--faint)}
+.panel{background:var(--panel);border-left:2px solid var(--accent)}
+.brand h1{font-weight:600} .brand p{color:var(--accent);font-style:italic;letter-spacing:1.4px;text-transform:none;font-size:11px}
+.search input{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);font-family:inherit}
+.search input::placeholder{color:var(--faint);font-style:italic}
+.search input:focus{border-color:var(--accent)}
+.sec{color:var(--faint);font-variant:small-caps;letter-spacing:1px;text-transform:none;font-size:11px}
+.chip{background:transparent;border:1px solid var(--line);color:var(--soft);border-radius:3px}
+.chip:hover{border-color:var(--accent);color:var(--ink)}
+.meter-top{color:var(--soft)} .meter-top span:last-child{color:var(--faint)}
+.track{background:rgba(255,255,255,.08)} .hr{background:var(--line)}
+.preview{border-top:1px solid var(--line);background:rgba(0,0,0,.14)}
+.pv-head{border-bottom:1px solid var(--line)}
+.pv-kicker{color:var(--faint);font-variant:small-caps;text-transform:none;letter-spacing:.6px;font-size:11px}
+.pv-meta{color:var(--faint)} .pv-body{color:var(--soft)} .pv-empty{color:var(--faint);font-style:italic}
+.pv-btn{background:transparent;border:1px solid var(--line);color:var(--soft);border-radius:3px}
+.pv-btn:hover{border-color:var(--accent);color:var(--ink)}
+.ring-label,.node-label{fill:var(--faint)}
+.ring-label{text-transform:none;font-variant:small-caps;letter-spacing:1.6px;font-size:10px}
+</style></head><body>
+<div class="app">
+  <div class="stage"><svg id="sky" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside class="panel">
+    <div class="p-top">
+      <div class="brand"><h1>Hub Jessica</h1><p>Second Brain</p></div>
+      <div class="search"><input placeholder="Buscar arquivos e skills…"></div>
+      <div><div class="sec">Ações rápidas</div><div class="chips">
+        <button class="chip">Limpar memória</button><button class="chip">Reindexar</button>
+        <button class="chip">Resumo</button><button class="chip">Sincronizar</button></div></div>
+      <div><div class="sec">Uso de modelo</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>Opus</span><span>52%</span></div><div class="track"><div class="fill" style="width:52%;background:#C97B4A"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Sonnet</span><span>38%</span></div><div class="track"><div class="fill" style="width:38%;background:#8A9B6E"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Haiku</span><span>10%</span></div><div class="track"><div class="fill" style="width:10%;background:#D9A441"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Tokens</span><span>1,8 M</span></div><div class="track"><div class="fill" style="width:61%;background:#6E7FA8"></div></div></div>
+      </div></div>
+      <div><div class="sec">Sistema</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>RAM</span><span>4,2/16</span></div><div class="track"><div class="fill" style="width:26%;background:#9B8878"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Disco</span><span>232/500</span></div><div class="track"><div class="fill" style="width:46%;background:#9B8878"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>CPU</span><span>18%</span></div><div class="track"><div class="fill" style="width:18%;background:#9B8878"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>Índice</span><span>1.247</span></div><div class="track"><div class="fill" style="width:94%;background:#9B8878"></div></div></div>
+      </div></div>
+    </div>
+    <div class="preview" id="preview"><div class="pv-empty">Toque em um ponto<br>para abrir a anotação</div></div>
+  </aside>
+</div>
+<div class="tip" id="tip"></div>
+<script src="engine.js"></script>
+<script>
+const T={
+  geo:{nucleus:46,gap:42,step:9,arc:7.6},
+  dots:{skills:6,memory:2.8,routines:6.5,apps:7},
+  labels:{skills:false,outer:true},
+  ticks:false, magnitude:true, halo:false, sunRule:true, handDrawn:true, orbitWidth:1.3,
+  c:{bg:'#2B2320',orbit:'rgba(237,227,216,.16)',orbitStrong:'rgba(237,227,216,.28)',
+     sun:'#D9A441',sunInk:'#2B2320',skills:'#C97B4A',routines:'#8A9B6E',apps:'#6E7FA8',
+     cat:{business:'#6E7FA8',content:'#C9614A',personal:'#8A9B6E',community:'#D9A441'}}
+};
+renderOrbital(document.getElementById('sky'),T);
+wireInteraction(document.getElementById('sky'),document.getElementById('tip'),document.getElementById('preview'),T);
+</script></body></html>

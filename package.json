@@ -1,0 +1,21 @@
+{
+  "name": "hub-jessica",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hub de Diagnóstico — plataforma de diagnóstico de posicionamento para mentoria médica",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/server.ts",
+    "start": "node --experimental-strip-types src/server.ts",
+    "migrar": "node --experimental-strip-types src/migrar.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.0.2",
+    "@fastify/formbody": "8.0.2",
+    "@fastify/multipart": "9.0.3",
+    "@fastify/static": "8.0.4",
+    "fastify": "5.2.1",
+    "pg": "8.13.1"
+  }
+}

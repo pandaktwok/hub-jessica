@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D · Instrumento</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+:root{
+  --bg:#0A0E14; --panel:#10151D; --ink:#D7DEE8; --soft:#8794A6; --faint:#5A6676;
+  --line:rgba(140,160,185,.16);
+}
+:root:not([data-theme="light"]){}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.stage{background:radial-gradient(circle at 50% 48%,#121822 0%,#0A0E14 60%,#070A0F 100%)}
+.tip{background:rgba(6,9,13,.97);color:var(--ink);border:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+.tip small{color:var(--faint)}
+.panel{background:var(--panel);border-left:1px solid var(--line)}
+.brand h1{font-weight:600;font-size:14px}
+.brand p{color:var(--faint);font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:1.6px}
+.search input{background:#0A0E14;border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:3px}
+.search input::placeholder{color:var(--faint)}
+.search input:focus{border-color:#22D3EE}
+.sec{color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.chip{background:#0A0E14;border:1px solid var(--line);color:var(--soft);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.chip:hover{border-color:#22D3EE;color:var(--ink)}
+.meter-top{color:var(--soft);font-size:10px}
+.meter-top span:last-child{color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.track{background:rgba(140,160,185,.12);height:2px} .hr{background:var(--line)}
+.meters{gap:9px}
+.preview{border-top:1px solid var(--line);background:#0C1117}
+.pv-head{border-bottom:1px solid var(--line)}
+.pv-kicker{color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.pv-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500}
+.pv-meta{color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.pv-body{color:var(--soft)} .pv-empty{color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.pv-btn{background:#0A0E14;border:1px solid var(--line);color:var(--soft);border-radius:3px;font-family:'IBM Plex Mono',monospace}
+.pv-btn:hover{border-color:#22D3EE;color:var(--ink)}
+.ring-label,.node-label{fill:var(--faint);font-family:'IBM Plex Mono',monospace}
+.cat-label{font-family:'IBM Plex Mono',monospace;font-size:9px}
+.sun-label,.sun-sub{font-family:'IBM Plex Mono',monospace}
+</style></head><body>
+<div class="app">
+  <div class="stage"><svg id="sky" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside class="panel">
+    <div class="p-top">
+      <div class="brand"><h1>Hub Jessica</h1><p>SECOND BRAIN / L3</p></div>
+      <div class="search"><input placeholder="grep arquivos, skills…"></div>
+      <div><div class="sec">Ações rápidas</div><div class="chips">
+        <button class="chip">limpar</button><button class="chip">reindex</button>
+        <button class="chip">resumo</button><button class="chip">sync</button></div></div>
+      <div><div class="sec">Uso de modelo</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>opus</span><span>52.4%</span></div><div class="track"><div class="fill" style="width:52%;background:#22D3EE"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>sonnet</span><span>38.1%</span></div><div class="track"><div class="fill" style="width:38%;background:#A3E635"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>haiku</span><span>09.5%</span></div><div class="track"><div class="fill" style="width:10%;background:#FB923C"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>tokens</span><span>1.84M</span></div><div class="track"><div class="fill" style="width:61%;background:#E879F9"></div></div></div>
+      </div></div>
+      <div><div class="sec">Sistema</div><div class="meters">
+        <div class="meter"><div class="meter-top"><span>ram</span><span>4.2/16G</span></div><div class="track"><div class="fill" style="width:26%;background:#64748B"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>disk</span><span>232/500G</span></div><div class="track"><div class="fill" style="width:46%;background:#64748B"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>cpu</span><span>18.3%</span></div><div class="track"><div class="fill" style="width:18%;background:#64748B"></div></div></div>
+        <div class="meter"><div class="meter-top"><span>idx</span><span>1247/1700</span></div><div class="track"><div class="fill" style="width:73%;background:#64748B"></div></div></div>
+      </div></div>
+    </div>
+    <div class="preview" id="preview"><div class="pv-empty">// selecione um nó</div></div>
+  </aside>
+</div>
+<div class="tip" id="tip"></div>
+<script src="engine.js"></script>
+<script>
+const T={
+  geo:{nucleus:42,gap:40,step:7.6,arc:6.6},
+  dots:{skills:4.5,memory:2.2,routines:5,apps:5.5},
+  labels:{skills:false,outer:true},
+  ticks:true, magnitude:false, halo:false, sunRule:true, handDrawn:false, orbitWidth:.9,
+  c:{bg:'#0A0E14',orbit:'rgba(140,160,185,.14)',orbitStrong:'rgba(140,160,185,.26)',
+     sun:'#E2E8F0',sunInk:'#0A0E14',skills:'#FB923C',routines:'#A3E635',apps:'#94A3B8',
+     cat:{business:'#22D3EE',content:'#E879F9',personal:'#A3E635',community:'#FB923C'}}
+};
+renderOrbital(document.getElementById('sky'),T);
+wireInteraction(document.getElementById('sky'),document.getElementById('tip'),document.getElementById('preview'),T);
+</script></body></html>
