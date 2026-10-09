@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { q, um, lerConfig, gravarConfig } from '../db.ts';
 import { hashSenha, abrirSessaoMentora, COOKIE_MENTORA, opcoesCookie } from '../auth.ts';
 import { pagina, trilha, esc } from '../visao/layout.ts';
-import { configIA, testar, MODELO_PADRAO, type Provedor } from '../ia/index.ts';
+import { configIA, testar, chaveDaConta, MODELOS, MODELO_PADRAO, type Provedor } from '../ia/index.ts';
+import { cifrar } from '../cofre.ts';
 import { PESSOAS, TRATAMENTOS, TONS, skillPersona, type Perfil } from '../persona.ts';
 
 // Conectar a IA e escolher onde guardar os arquivos saíram do assistente dela:
@@ -166,56 +167,132 @@ export default async function rotasSetup(app: FastifyInstance) {
   });
 
   // ------------------------------------------------------------- 2. IA
-  app.get('/config/ia', async (_req, res) => {
+  const NOME_PROVEDOR: Record<string, string> = {
+    claude: 'Claude (Anthropic)',
+    openai: 'ChatGPT (OpenAI)',
+    gemini: 'Gemini (Google)',
+    meta: 'Meta AI (Llama)',
+  };
+  const ONDE_PEGAR: Record<string, string> = {
+    claude: 'console.anthropic.com, em Settings › API Keys',
+    openai: 'platform.openai.com, em API keys',
+    gemini: 'aistudio.google.com, em Get API key',
+    meta: 'o serviço que você contratou para os modelos Llama',
+  };
+  const PROVEDORES = ['claude', 'gemini', 'openai', 'meta'] as const;
+
+  app.get('/config/ia', async (req: any, res) => {
+    if (!req.mentora) return res.redirect('/entrar');
     const cfg = await configIA();
-    const opcoes = (['claude', 'openai', 'gemini', 'meta'] as Provedor[])
-      .map((p) => {
-        const nome = { claude: 'Claude (Anthropic)', openai: 'ChatGPT (OpenAI)', gemini: 'Gemini (Google)', meta: 'Meta AI (Llama)' }[p as 'claude'];
-        return `<option value="${p}"${cfg.provedor === p ? ' selected' : ''}>${esc(nome)}</option>`;
-      })
+    const atual = cfg.provedor === 'stub' ? 'claude' : cfg.provedor;
+    const guardadas = await q<{ provedor: string; final4: string }>('SELECT provedor, final4 FROM chaves_ia');
+    const final = new Map(guardadas.map((g) => [g.provedor, g.final4]));
+
+    const opcProvedor = PROVEDORES
+      .map((p) => `<option value="${p}"${atual === p ? ' selected' : ''}>${esc(NOME_PROVEDOR[p])}</option>`)
       .join('');
+    const opcModelo = MODELOS.map(
+      (m) =>
+        `<option value="${m.id}" data-provedor="${m.provedor}"${cfg.modelo === m.id ? ' selected' : ''}>${esc(m.nome)}</option>`,
+    ).join('');
+
+    const blocoChave = PROVEDORES.map((p) => {
+      const f = final.get(p);
+      return `<div class="chave-de" data-provedor="${p}">
+          ${
+            f
+              ? `<div class="ok">Chave cadastrada, terminada em <strong>${esc(f)}</strong>.</div>`
+              : `<div class="aviso">Nenhuma chave cadastrada para este provedor ainda.</div>`
+          }
+          <div class="campo"><label for="chave-${p}">${f ? 'Trocar a chave (deixe em branco para manter a atual)' : 'Chave de API'}</label>
+            <input id="chave-${p}" name="chave_${p}" type="password" autocomplete="off" style="max-width:420px">
+            <div class="exemplo">Pegue em ${esc(ONDE_PEGAR[p])}. Entrar com a conta do chat não dá acesso à API.</div></div>
+        </div>`;
+    }).join('');
+
     return res.type('text/html').send(
       molde(
         0,
         'Conectar a inteligência artificial',
-        `<p class="sub">O Hub usa uma inteligência artificial para montar os textos do diagnóstico.
-          A chave fica no arquivo de configuração do servidor, nunca aqui na tela.</p>
-        <form method="post" action="/config/ia">
-          <div class="campo"><label for="provedor">Qual provedor</label>
-            <select id="provedor" name="provedor">${opcoes}</select>
-            <div class="exemplo">A chave correspondente precisa estar no .env: CLAUDE_API_KEY,
-              OPENAI_API_KEY, GEMINI_API_KEY ou META_API_KEY.</div></div>
-          <div class="campo"><label for="modelo">Modelo (deixe em branco para o padrão)</label>
-            <input id="modelo" name="modelo" type="text" value="${esc(cfg.modelo ?? '')}"
-              placeholder="${esc(MODELO_PADRAO[cfg.provedor] ?? '')}"></div>
-          <div class="aviso">Ao salvar, o Hub faz uma chamada de teste e mostra o resultado aqui.
-            Nada é dado por certo sem a ida e volta funcionar.</div>
+        `<p class="sub">O programa usa a inteligência artificial para escrever os textos. Escolha o provedor e o
+          modelo e cole a chave de API uma vez. A chave fica guardada cifrada no servidor e não volta a aparecer
+          inteira na tela.</p>
+        <form method="post" action="/config/ia" id="form-ia">
+          <div class="grade">
+            <div class="campo"><label for="provedor">Provedor</label>
+              <select id="provedor" name="provedor">${opcProvedor}</select></div>
+            <div class="campo"><label for="modelo">Modelo</label>
+              <select id="modelo" name="modelo">${opcModelo}</select></div>
+          </div>
+          <div class="campo" style="max-width:420px"><label for="modelo_outro">Outro modelo (opcional: o nome exato da API)</label>
+            <input id="modelo_outro" name="modelo_outro" type="text" autocomplete="off"></div>
+          ${blocoChave}
+          <div class="aviso">Ao salvar, o programa faz uma chamada de teste com esta chave. Só guarda se a resposta voltar.</div>
           ${botoes('/setup', 'Salvar e testar')}
-        </form>`,
+        </form>
+        <script>
+          (function(){
+            var p=document.getElementById('provedor'),m=document.getElementById('modelo');
+            function filtrar(){
+              var v=p.value,primeiro=null;
+              Array.prototype.forEach.call(m.options,function(o){
+                var ok=o.getAttribute('data-provedor')===v;o.hidden=!ok;o.disabled=!ok;
+                if(ok&&!primeiro)primeiro=o;
+              });
+              if(m.options[m.selectedIndex]&&m.options[m.selectedIndex].disabled&&primeiro)primeiro.selected=true;
+              document.querySelectorAll('.chave-de').forEach(function(b){b.style.display=b.getAttribute('data-provedor')===v?'block':'none'});
+            }
+            p.addEventListener('change',filtrar);filtrar();
+          })();
+        </script>`,
       ),
     );
   });
 
-  app.post<{ Body: { provedor: Provedor; modelo?: string } }>('/config/ia', async (req, res) => {
-    const cfg = { provedor: req.body.provedor, modelo: req.body.modelo?.trim() || undefined };
-    const r = await testar(cfg);
-    if (!r.ok) {
-      return res.type('text/html').send(
-        molde(0, 'Conectar a inteligência artificial',
-          `<div class="erro"><strong>A conexão não funcionou.</strong><br>${esc(r.detalhe)}</div>
-           <p class="sub">A configuração não foi salva. Corrija a chave no arquivo .env do servidor,
-             reinicie e tente de novo.</p>
-           <div class="acoes"><a class="botao" href="/config/ia">Tentar de novo</a></div>`),
-      );
+  app.post<{ Body: Record<string, string> }>('/config/ia', async (req: any, res) => {
+    if (!req.mentora) return res.redirect('/entrar');
+    const provedor = (PROVEDORES as readonly string[]).includes(req.body.provedor)
+      ? (req.body.provedor as Provedor)
+      : 'claude';
+    const modelo =
+      String(req.body.modelo_outro ?? '').trim().slice(0, 80) ||
+      String(req.body.modelo ?? '').trim() ||
+      MODELO_PADRAO[provedor];
+    const digitada = String(req.body[`chave_${provedor}`] ?? '').trim();
+    const enviar = (corpo: string) =>
+      res.type('text/html').send(molde(0, 'Conectar a inteligência artificial', corpo));
+    const chave = digitada || (await chaveDaConta(provedor));
+    if (!chave) {
+      return enviar(`<div class="erro">Cole a chave de API do ${esc(NOME_PROVEDOR[provedor])}.</div>
+        <div class="acoes"><a class="botao" href="/config/ia">Voltar</a></div>`);
     }
-    await gravarConfig('ia', cfg);
-    await concluir('ia', { provedor: cfg.provedor, modelo: cfg.modelo ?? MODELO_PADRAO[cfg.provedor] });
-    return res.type('text/html').send(
-      molde(0, 'Conectar a inteligência artificial',
-        `<div class="ok"><strong>Funcionou.</strong> A inteligência artificial respondeu:
-          <br><em>${esc(r.detalhe)}</em></div>
-         <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`),
-    );
+
+    const r = await testar({ provedor, modelo }, digitada || undefined);
+    if (!r.ok) {
+      return enviar(`<div class="erro"><strong>A conexão não funcionou.</strong><br>${esc(r.detalhe)}</div>
+        <p class="sub">Nada foi guardado. Confira a chave e o modelo, e tente de novo.</p>
+        <div class="acoes"><a class="botao" href="/config/ia">Tentar de novo</a></div>`);
+    }
+
+    if (digitada) {
+      try {
+        const c = cifrar(digitada);
+        await q(
+          `INSERT INTO chaves_ia (provedor, cifrada, iv, tag, final4) VALUES ($1,$2,$3,$4,$5)
+           ON CONFLICT (provedor) DO UPDATE SET cifrada=EXCLUDED.cifrada, iv=EXCLUDED.iv, tag=EXCLUDED.tag,
+             final4=EXCLUDED.final4, cadastrada_em=now()`,
+          [provedor, c.cifrada, c.iv, c.tag, digitada.slice(-4)],
+        );
+      } catch (e: any) {
+        return enviar(`<div class="erro">${esc(String(e?.message ?? e))}</div>
+          <div class="acoes"><a class="botao" href="/config/ia">Voltar</a></div>`);
+      }
+    }
+    await gravarConfig('ia', { provedor, modelo });
+    await concluir('ia', { provedor, modelo });
+    return enviar(`<div class="ok"><strong>Funcionou.</strong> A inteligência artificial respondeu:
+        <br><em>${esc(r.detalhe)}</em></div>
+       <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`);
   });
 
   // ------------------------------------------------------------- 3. armazenamento

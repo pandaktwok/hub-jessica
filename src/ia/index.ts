@@ -3,7 +3,8 @@
 //
 // A estrutura dos prompts é fixa; só muda o direcionamento para o modelo escolhido.
 
-import { lerConfig } from '../db.ts';
+import { lerConfig, um } from '../db.ts';
+import { decifrar } from '../cofre.ts';
 
 export type Provedor = 'claude' | 'openai' | 'gemini' | 'meta' | 'stub';
 
@@ -33,6 +34,17 @@ export const TABELA_PRECO: Record<string, { in: number; out: number }> = {
   'gemini-3.8-flash': { in: 0.75, out: 3.75 },
   'llama-maverick': { in: 0.2, out: 0.6 },
 };
+
+/** Modelos que a tela oferece. Os nomes são os da API; o que não estiver aqui pode ser digitado. */
+export const MODELOS: { provedor: Provedor; id: string; nome: string }[] = [
+  { provedor: 'claude', id: 'claude-sonnet-5-5', nome: 'Claude Sonnet 5.5' },
+  { provedor: 'claude', id: 'claude-haiku-5-5', nome: 'Claude Haiku 5.5' },
+  { provedor: 'claude', id: 'claude-opus-5-5', nome: 'Claude Opus 5.5' },
+  { provedor: 'gemini', id: 'gemini-3.8-flash', nome: 'Gemini 3.8 Flash' },
+  { provedor: 'gemini', id: 'gemini-3.5-flash-lite', nome: 'Gemini 3.5 Flash-Lite' },
+  { provedor: 'openai', id: 'gpt-5.6-terra', nome: 'GPT 5.6 Terra' },
+  { provedor: 'openai', id: 'gpt-5.6-luna', nome: 'GPT 5.6 Luna' },
+];
 
 export const MODELO_PADRAO: Record<Provedor, string> = {
   claude: 'claude-sonnet-5-5',
@@ -235,6 +247,17 @@ export function chaveDoAmbiente(provedor: Provedor): string | undefined {
   return mapa[provedor];
 }
 
+/** Chave do provedor: a cadastrada na tela (cifrada no banco) ou, na falta, a do .env. */
+export async function chaveDaConta(provedor: Provedor): Promise<string | undefined> {
+  if (provedor === 'stub') return 'stub';
+  const l = await um<{ cifrada: Buffer; iv: Buffer; tag: Buffer }>(
+    'SELECT cifrada, iv, tag FROM chaves_ia WHERE provedor = $1',
+    [provedor],
+  );
+  if (l) return decifrar(l);
+  return chaveDoAmbiente(provedor);
+}
+
 export async function configIA(): Promise<ConfigIA> {
   if (process.env.LLM_MODE === 'stub') return { provedor: 'stub', modelo: 'stub' };
   const salva = await lerConfig<ConfigIA>('ia');
@@ -242,18 +265,18 @@ export async function configIA(): Promise<ConfigIA> {
   return { provedor: 'stub', modelo: 'stub' };
 }
 
-export async function gerar(p: Pedido, cfg?: ConfigIA): Promise<Resposta> {
+export async function gerar(p: Pedido, cfg?: ConfigIA, chaveOverride?: string): Promise<Resposta> {
   const c = cfg ?? (await configIA());
   const provedor = c.provedor;
   const modelo = c.modelo || MODELO_PADRAO[provedor];
 
   if (provedor === 'stub') return viaStub(p);
 
-  const chave = chaveDoAmbiente(provedor);
+  const chave = chaveOverride ?? (await chaveDaConta(provedor));
   if (!chave) {
     throw new Error(
       `CHAVE_AUSENTE: não há chave configurada para ${provedor}. ` +
-        `Defina a variável correspondente no .env e reinicie.`,
+        `Cadastre a chave em "Conecte a sua IA".`,
     );
   }
 
@@ -270,11 +293,12 @@ export async function gerar(p: Pedido, cfg?: ConfigIA): Promise<Resposta> {
 }
 
 /** Chamada curta só para dizer na tela se a conexão funciona. */
-export async function testar(cfg: ConfigIA): Promise<{ ok: boolean; detalhe: string }> {
+export async function testar(cfg: ConfigIA, chave?: string): Promise<{ ok: boolean; detalhe: string }> {
   try {
     const r = await gerar(
       { sistema: 'Responda em uma linha.', usuario: 'Diga: conexão funcionando.', maxTokens: 64 },
       cfg,
+      chave,
     );
     return { ok: true, detalhe: r.texto.trim().slice(0, 200) };
   } catch (e: any) {

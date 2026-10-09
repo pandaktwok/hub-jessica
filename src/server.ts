@@ -5,7 +5,7 @@ import multipart from '@fastify/multipart';
 import { pool, q, um, lerConfig } from './db.ts';
 import { migrar } from './migrar.ts';
 import { pagina, esc } from './visao/layout.ts';
-import { configIA, chaveDoAmbiente } from './ia/index.ts';
+import { configIA, chaveDaConta } from './ia/index.ts';
 import {
   COOKIE_MENTORA,
   mentoraDaSessao,
@@ -50,10 +50,10 @@ app.get('/healthz', async (_req, res) => {
     estado.ia = { ok: false, detalhe: 'não foi possível ler a configuração' };
   } else if (cfg.provedor === 'stub') {
     estado.ia = { ok: true, detalhe: 'modo de simulação, sem chamar API' };
-  } else if (!chaveDoAmbiente(cfg.provedor)) {
+  } else if (!(await chaveDaConta(cfg.provedor))) {
     estado.ia = {
       ok: false,
-      detalhe: `falta a chave de ${cfg.provedor} no .env do servidor`,
+      detalhe: `falta a chave de ${cfg.provedor}: cadastre em Conecte a sua IA`,
     };
   } else {
     estado.ia = { ok: true, detalhe: `${cfg.provedor} configurado` };
