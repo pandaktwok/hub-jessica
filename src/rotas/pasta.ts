@@ -20,7 +20,12 @@ export default async function rotasPasta(app: FastifyInstance) {
           <button type="button" id="escolher">Selecionar a pasta</button>
           <form method="post" action="/setup/pasta" style="display:inline" id="feito">
             <input type="hidden" name="nome" id="nome-pasta">
-            <button type="submit" class="calmo" id="continuar" style="display:none">Continuar</button>
+            <div id="bloco-caminho" style="display:none">
+              <div class="campo"><label for="caminho">Caminho completo da pasta</label>
+                <div class="dica">O navegador só me diz o nome da pasta. Cole aqui o caminho inteiro (no Explorador de Arquivos, clique na barra de endereço e copie), para eu mostrar onde cada arquivo foi salvo.</div>
+                <input id="caminho" name="caminho" type="text" placeholder="C:\Users\Jessica\Documents\Hub" required></div>
+              <button type="submit" id="continuar">Salvar e continuar</button>
+            </div>
           </form>
         </div>
         <form method="post" action="/setup/pasta/pular">
@@ -33,12 +38,11 @@ export default async function rotasPasta(app: FastifyInstance) {
           (function(){
             var estado=document.getElementById('estado');
             var btn=document.getElementById('escolher');
-            var cont=document.getElementById('continuar');
-            var nome=document.getElementById('nome-pasta');
+                        var nome=document.getElementById('nome-pasta');
             function mostrar(h){
               estado.innerHTML='<div class="ok">Pasta escolhida: <strong></strong></div>';
               estado.querySelector('strong').textContent=h.name;
-              nome.value=h.name;cont.style.display='inline-block';
+              nome.value=h.name;document.getElementById('bloco-caminho').style.display='block';
             }
             if(!hubPasta.suportado()){
               estado.innerHTML='<div class="aviso">Este navegador não deixa escolher uma pasta. Use o Chrome ou o Edge, ou pule esta etapa.</div>';
@@ -59,10 +63,11 @@ export default async function rotasPasta(app: FastifyInstance) {
     );
   });
 
-  app.post<{ Body: { nome?: string } }>('/setup/pasta', async (req, res) => {
+  app.post<{ Body: { nome?: string; caminho?: string } }>('/setup/pasta', async (req, res) => {
     const nome = String(req.body?.nome ?? '').slice(0, 200);
-    await gravarConfig('pasta_pc', { nome });
-    await concluir('pasta', { nome });
+    const caminho = String(req.body?.caminho ?? '').trim().slice(0, 400);
+    await gravarConfig('pasta_pc', { nome, caminho });
+    await concluir('pasta', { nome, caminho });
     return res.redirect('/setup');
   });
 

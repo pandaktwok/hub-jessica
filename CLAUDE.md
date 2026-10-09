@@ -77,13 +77,13 @@ src/
   anonimizar.ts        retira dados pessoais de PDF de consulta, na entrada
   rotas/setup.ts       painel das seis etapas, conta, perfil/voz, /config técnico
   rotas/pasta.ts       pasta do computador (File System Access API, só no navegador)
-  rotas/modulos.ts     perguntas de exemplo, documentos com citação, PDF de exemplo
+  rotas/modulos.ts     ciclo do módulo: respostas, documentos, Gerar PDF (skill→PDF), observações, aprovar/editar com senha
   rotas/preco.ts       calculadora de dois pacotes, hospedagem e IA
   persona.ts           voz do assistente a partir das escolhas, sem IA
   pdf.ts               PDF de exemplo (pdfkit, MIT)
   rotas/consultoria.ts o fluxo da mentorada: link, módulos, revisão, Mapa
   rotas/mentoradas.ts  painel: cadastro, link de acesso, ficha
-  rotas/skills.ts      geração de skills (material + exemplo), .md por skill
+  rotas/skills.ts      só leitura das skills; elas nascem no Gerar PDF de cada módulo
   visao/layout.ts      HTML e CSS
 ```
 

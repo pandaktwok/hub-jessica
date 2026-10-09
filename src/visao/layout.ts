@@ -134,7 +134,19 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .etiqueta{display:inline-block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
   border:1px solid var(--tinta);padding:3px 8px}
 
+/* ---- ciclo do módulo */
+#laranja{position:sticky;bottom:0;z-index:5}
+.laranja{background:#F59E42;color:#1D1305;padding:18px 22px;font-weight:600;margin:22px 0;line-height:1.5}
+.laranja small{color:#3a2508}
+.botao.grande,button.grande{padding:24px 48px;font-size:15px;letter-spacing:.2em;min-height:68px}
+.selo-aprovado{display:inline-block;background:var(--tinta);color:#fff;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;padding:6px 12px}
+.obs{padding-left:22px;margin:10px 0}.obs li{margin:8px 0}
+.barra{height:10px;background:var(--linha);margin:10px 0;display:none}
+.barra i{display:block;height:100%;width:0;background:var(--tinta);transition:width .15s}
+.estado-gerar{margin-top:12px;font-weight:600}
+.caminho{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--faixa);padding:12px 14px;font-size:14px;word-break:break-all}
 @media(max-width:760px){
+  .botao.grande,button.grande{width:100%;padding:22px}
   .capa{padding-left:16px;padding-right:16px}
   .nav{padding:12px 16px;gap:14px;flex-wrap:wrap}
   .nav .links{order:3;flex-basis:100%;gap:16px;overflow-x:auto}
@@ -177,6 +189,11 @@ const SCRIPT_PASTA = `
     suportado:function(){return typeof window.showDirectoryPicker==='function'},
     escolher:function(){return window.showDirectoryPicker({mode:'readwrite',id:'hub-jessica'}).then(function(h){return gravar(h).then(function(){return h})})},
     atual:ler,
+    garantir:async function(){
+      var h=await ler();if(!h)return null;
+      if((await h.queryPermission({mode:'readwrite'}))==='granted')return h;
+      return (await h.requestPermission({mode:'readwrite'}))==='granted'?h:null;
+    },
     escrever:async function(arquivos){
       var h=await ler();
       if(!h)throw new Error('Nenhuma pasta escolhida ainda.');

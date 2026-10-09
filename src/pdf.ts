@@ -44,6 +44,9 @@ export function pdfExemplo(o: {
   saida: unknown;
   provedor?: string | null;
   modelo?: string | null;
+  rodada?: number;
+  observacoes?: string[];
+  rodape?: string;
 }): Promise<Buffer> {
   return new Promise((ok, no) => {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 64, bottom: 64, left: 64, right: 64 }, info: { Title: `Módulo ${o.modulo} — exemplo` } });
@@ -62,7 +65,7 @@ export function pdfExemplo(o: {
     };
 
     doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#666666')
-      .text('EXEMPLO PARA REVISÃO', { characterSpacing: 2 });
+      .text(`EXEMPLO PARA REVISÃO${o.rodada ? ' · VERSÃO ' + o.rodada : ''}`, { characterSpacing: 2 });
     doc.moveDown(0.6);
     doc.font('Helvetica-Bold').fontSize(24).fillColor('#111111')
       .text(`Módulo ${o.modulo}`, { lineGap: 0 });
@@ -91,6 +94,22 @@ export function pdfExemplo(o: {
 
     w('O QUE A IA GERARIA PARA A MENTORADA', { negrito: true, tamanho: 9 });
     escreverValor(w, o.saida, 0);
+
+    if (o.observacoes?.length) {
+      doc.moveDown(0.8);
+      w('SUAS OBSERVAÇÕES ATÉ AQUI (JÁ CONSIDERADAS NESTA VERSÃO)', { negrito: true, tamanho: 9 });
+      o.observacoes.forEach((t, i) => w(`${i + 1}. ${t.slice(0, 1500)}`, { recuo: 10 }));
+    }
+
+    if (o.rodape) {
+      if (doc.y > 720) doc.addPage();
+      doc.moveDown(1.2);
+      const topo = doc.y;
+      const alt = 46;
+      doc.rect(64, topo, 467, alt).fill('#F59E42');
+      doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#1D1305')
+        .text(o.rodape, 76, topo + 9, { width: 443, lineGap: 2 });
+    }
 
     doc.end();
   });

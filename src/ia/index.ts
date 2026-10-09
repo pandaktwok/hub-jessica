@@ -180,6 +180,17 @@ async function viaMeta(p: Pedido, chave: string, modelo: string, base?: string):
 function viaStub(p: Pedido): Resposta {
   // Determinística de propósito: teste ponta a ponta sem gastar e sem variar.
   const eco = p.usuario.slice(0, 160).replace(/\s+/g, ' ');
+  if (p.usuario.includes('SKILL_DO_MODULO')) {
+    return {
+      texto: JSON.stringify({
+        nome: 'escrita-simulada',
+        descricao: 'Skill simulada do módulo.',
+        quando_usar: 'Ao gerar o texto deste módulo.',
+        instrucoes: '1. Leia as respostas.\n2. Escreva na voz da mentora.\n3. Devolva o JSON pedido.',
+      }),
+      tokensIn: 100, tokensOut: 80, custoCentavos: 0, provedor: 'stub', modelo: 'stub',
+    };
+  }
   if (p.usuario.includes('Extraia de 2 a 5 procedimentos')) {
     return {
       texto: JSON.stringify({
