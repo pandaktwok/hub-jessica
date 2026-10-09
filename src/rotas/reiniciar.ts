@@ -69,15 +69,26 @@ export default async function rotasReiniciar(app: FastifyInstance) {
     try {
       await c.query('BEGIN');
       await c.query('TRUNCATE mentoradas CASCADE');
-      await c.query('TRUNCATE exemplos, exemplo_saidas, materiais, skills, modulo_estado, observacoes, rodadas, chaves_ia');
+      // Tabelas das migrações mais novas podem não existir se a imagem estiver desatualizada:
+      // limpa só as que existem em vez de derrubar o reinício inteiro.
+      for (const t of ['exemplos', 'exemplo_saidas', 'materiais', 'skills', 'modulo_estado', 'observacoes', 'rodadas']) {
+        const ex = await c.query('SELECT to_regclass($1) AS r', [t]);
+        if (ex.rows[0].r) await c.query(`TRUNCATE ${t}`);
+      }
       await c.query("UPDATE prompts SET texto_mentora = NULL, versao_mentora = 0");
-      await c.query("DELETE FROM config WHERE chave IN ('perfil','precificacao','precificacao_v2','precificacao_v3','ia','pasta_pc','consentimento_textos','consentimento_versao')");
+      await c.query("DELETE FROM config WHERE chave IN ('perfil','precificacao','precificacao_v2','precificacao_v3','pasta_pc','consentimento_textos','consentimento_versao')");
       await c.query('TRUNCATE mentora CASCADE');
       await c.query("UPDATE setup_etapas SET concluida = false, concluida_em = NULL, dados = '{}'::jsonb");
       await c.query('COMMIT');
-    } catch (e) {
-      await c.query('ROLLBACK');
-      throw e;
+    } catch (e: any) {
+      await c.query('ROLLBACK').catch(() => {});
+      return res.code(500).type('text/html').send(
+        molde(0, 'Reiniciar o teste',
+          `<div class="erro"><strong>Não consegui reiniciar. Nada foi apagado.</strong><br>${String(e?.message ?? e)
+            .slice(0, 300)
+            .replace(/[<>&]/g, '')}</div>
+           <div class="acoes"><a class="botao" href="/reiniciar">Tentar de novo</a></div>`),
+      );
     } finally {
       c.release();
     }

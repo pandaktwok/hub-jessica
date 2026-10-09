@@ -258,10 +258,12 @@ export async function chaveDaConta(provedor: Provedor): Promise<string | undefin
   return chaveDoAmbiente(provedor);
 }
 
+// A conexão salva na tela vale primeiro. O modo de simulação (LLM_MODE=stub) só vale
+// enquanto ninguém conectou uma IA: antes, ele ignorava a conexão salva e o programa
+// continuava simulando mesmo com a chave cadastrada.
 export async function configIA(): Promise<ConfigIA> {
-  if (process.env.LLM_MODE === 'stub') return { provedor: 'stub', modelo: 'stub' };
   const salva = await lerConfig<ConfigIA>('ia');
-  if (salva?.provedor) return salva;
+  if (salva?.provedor && salva.provedor !== 'stub') return salva;
   return { provedor: 'stub', modelo: 'stub' };
 }
 

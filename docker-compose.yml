@@ -42,6 +42,7 @@ services:
       META_API_KEY: ${META_API_KEY:-}
       SENHA_REINICIAR: ${SENHA_REINICIAR:-}
       CHAVE_CIFRA: ${CHAVE_CIFRA:-}
+      PASTA_DADOS: /dados/acervo
     volumes:
       - dados_acervo:/dados/acervo
     # Só o proxy alcança a aplicação. A porta fica presa no localhost para

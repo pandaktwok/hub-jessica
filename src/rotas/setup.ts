@@ -185,7 +185,7 @@ export default async function rotasSetup(app: FastifyInstance) {
     if (!req.mentora) return res.redirect('/entrar');
     const cfg = await configIA();
     const atual = cfg.provedor === 'stub' ? 'claude' : cfg.provedor;
-    const guardadas = await q<{ provedor: string; final4: string }>('SELECT provedor, final4 FROM chaves_ia');
+    const guardadas = await q<{ provedor: string; final4: string }>('SELECT provedor, final4 FROM chaves_ia').catch(() => []);
     const final = new Map(guardadas.map((g) => [g.provedor, g.final4]));
 
     const opcProvedor = PROVEDORES
