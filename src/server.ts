@@ -18,6 +18,9 @@ import rotasSetup, { etapas, setupCompleto } from './rotas/setup.ts';
 import rotasConsultoria from './rotas/consultoria.ts';
 import rotasMentoradas, { rotaMaterial } from './rotas/mentoradas.ts';
 import rotasSkills from './rotas/skills.ts';
+import rotasPasta from './rotas/pasta.ts';
+import rotasModulos from './rotas/modulos.ts';
+import rotasPreco from './rotas/preco.ts';
 
 const app = Fastify({
   logger: { level: process.env.LOG_NIVEL ?? 'info' },
@@ -27,7 +30,7 @@ const app = Fastify({
 
 await app.register(cookie);
 await app.register(formbody);
-await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
+await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024, files: 20 } });
 
 // ------------------------------------------------------------------ saúde
 
@@ -137,6 +140,9 @@ await app.register(rotasConsultoria);
 await app.register(rotasMentoradas);
 await app.register(rotaMaterial);
 await app.register(rotasSkills);
+await app.register(rotasPasta);
+await app.register(rotasModulos);
+await app.register(rotasPreco);
 
 // ------------------------------------------------------------------ painel
 
@@ -157,6 +163,7 @@ app.get('/admin', async (req: any, res) => {
   return res.type('text/html').send(
     pagina(
       {
+        admin: true,
         titulo: 'Painel',
         capa: {
           selo: perfil.marca || 'Hub de Diagnóstico',
@@ -185,9 +192,9 @@ app.get('/admin', async (req: any, res) => {
         <h2>O que dá para fazer</h2>
         <ul class="lista-etapas">
           <li><span class="marca">·</span><span><a href="/admin/mentoradas">Mentoradas</a> — cadastrar, gerar link e acompanhar onde cada uma está</span></li>
-          <li><span class="marca">·</span><span><a href="/admin/skills">Skills</a> — gerar a partir do seu material e revisar</span></li>
-          <li><span class="marca">·</span><span><a href="/setup/modulos">Módulos e material</a> — subir referências e ajustar instruções</span></li>
-          <li><span class="marca">·</span><span><a href="/setup">Configuração inicial</a> — as nove etapas</span></li>
+          <li><span class="marca">·</span><span><a href="/admin/skills">Skills geradas</a> — os arquivos .md de cada módulo</span></li>
+          <li><span class="marca">·</span><span><a href="/setup/modulos">Os seis módulos</a> — responder, subir documentos e gerar o PDF de exemplo</span></li>
+          <li><span class="marca">·</span><span><a href="/setup">Configuração inicial</a> — as seis etapas</span></li>
           <li><span class="marca">·</span><span><a href="/setup/precificacao">Custos e preço</a></span></li>
           <li><span class="marca">·</span><span><a href="/healthz">Saúde do sistema</a></span></li>
         </ul>

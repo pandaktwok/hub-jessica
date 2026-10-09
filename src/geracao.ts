@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { q, um, lerConfig } from './db.ts';
 import { gerar, configIA } from './ia/index.ts';
 import { avaliar } from './verificador.ts';
+import { blocoEstilo } from './persona.ts';
 
 // Orçamento de contexto. Sem isto, no módulo 6 o prompt carrega cinco módulos de saída
 // mais todas as respostas, e a geração estoura os 30 segundos justamente no módulo que
@@ -35,13 +36,14 @@ async function textoPrompt(slug: string): Promise<string> {
 async function sistemaComPerfil(): Promise<string> {
   const base = await textoPrompt('_sistema');
   const perfil = (await lerConfig<any>('perfil')) ?? {};
-  return base.replaceAll('{{MENTORA}}', perfil.nome || 'sua mentora');
+  const estilo = blocoEstilo(perfil);
+  return base.replaceAll('{{MENTORA}}', perfil.nome || 'sua mentora') + (estilo ? `\n\n${estilo}` : '');
 }
 
 /** Material que a mentora subiu, recortado para caber no orçamento. */
 async function materialDoModulo(modulo: number, teto: number): Promise<string> {
   const mats = await q<{ nome: string; conteudo: string | null }>(
-    `SELECT nome, conteudo FROM materiais
+    `SELECT nome || coalesce(' (citação: ' || citacao || ')', '') AS nome, conteudo FROM materiais
       WHERE coalesce(modulo,0) IN (0, $1) AND conteudo IS NOT NULL
       ORDER BY (coalesce(modulo,0) = $1) DESC, criado_em`,
     [modulo],
@@ -100,6 +102,10 @@ async function numerosModulo4(diagnosticoId: string): Promise<string> {
     'SELECT campo, valor FROM respostas WHERE diagnostico_id = $1 AND modulo = 4',
     [diagnosticoId],
   );
+  return calcularNumeros4(rs);
+}
+
+export function calcularNumeros4(rs: { campo: string; valor: string }[]): string {
   const v = (c: string) => {
     const n = Number(String(rs.find((r) => r.campo === c)?.valor ?? '').replace(',', '.'));
     return Number.isFinite(n) ? n : 0;
@@ -316,4 +322,82 @@ export async function gerarMapa(diagnosticoId: string): Promise<{ mapaId: string
   });
 
   return { mapaId };
+}
+
+
+/**
+ * Exemplo de preenchimento: a mentora responde as perguntas de entrada de um módulo e o
+ * sistema gera o que a IA geraria para uma mentorada. Sai em PDF para ela dar feedback.
+ */
+export async function gerarExemplo(modulo: number): Promise<{ estado: string; erro?: string }> {
+  const rs = await q<{ campo: string; rotulo: string; valor: string }>(
+    `SELECT p.campo, p.rotulo, e.valor
+       FROM exemplos e JOIN perguntas p ON p.modulo = e.modulo AND p.campo = e.campo
+      WHERE e.modulo = $1 AND btrim(e.valor) <> '' ORDER BY p.ordem`,
+    [modulo],
+  );
+  if (!rs.length) {
+    return { estado: 'vazio', erro: 'Responda pelo menos uma pergunta de entrada antes de gerar o exemplo.' };
+  }
+  const respostas = rs.map((r) => `${r.rotulo}\n${r.valor}`).join('\n\n');
+
+  const sistema = await sistemaComPerfil();
+  const instrucoes = await textoPrompt(`modulo-${modulo}`);
+  const fixo = sistema.length + instrucoes.length + respostas.length;
+  const disponivel = Math.max(2000, TETO_CONTEXTO - fixo);
+  const material = await materialDoModulo(modulo, Math.floor(disponivel * 0.45));
+
+  // Saídas de exemplo dos módulos anteriores, para o módulo seguinte se apoiar nelas.
+  const ant = await q<{ modulo: number; conteudo: any }>(
+    `SELECT modulo, conteudo FROM exemplo_saidas WHERE modulo < $1 AND estado = 'pronto' ORDER BY modulo DESC`,
+    [modulo],
+  );
+  let anterior = '';
+  for (const a of ant) {
+    const bloco = `\n### Módulo ${a.modulo} (exemplo)\n${JSON.stringify(a.conteudo, null, 1)}\n`;
+    if (anterior.length + bloco.length > disponivel * 0.55) break;
+    anterior = bloco + anterior;
+  }
+
+  const numeros = modulo === 4 ? calcularNumeros4(rs) : '';
+  const usuario = [
+    material ? `## Material de referência da mentora\n${material}` : '',
+    anterior ? `## O que já foi construído neste exemplo\n${anterior}` : '',
+    numeros,
+    `## Respostas dela neste módulo\n${respostas}`,
+    `## O que fazer\n${instrucoes}`,
+    'Devolva apenas o JSON pedido, sem texto antes nem depois, sem cercas de código.',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  const cfg = await configIA();
+  let r: any = null;
+  let vereditoFinal: any = null;
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    r = await gerar({ sistema, usuario, maxTokens: 3000 }, cfg);
+    vereditoFinal = avaliar(r.texto, tentativa);
+    if (vereditoFinal.acao !== 'regerar') break;
+  }
+
+  if (vereditoFinal?.acao === 'bloquear') {
+    const erro = `BLOQUEADO: ${vereditoFinal.clinico.map((c: any) => c.motivo).join('; ')}`;
+    await q(
+      `INSERT INTO exemplo_saidas (modulo, estado, erro, provedor, modelo, custo_centavos, gerado_em)
+       VALUES ($1,'bloqueado',$2,$3,$4,$5,now())
+       ON CONFLICT (modulo) DO UPDATE SET estado='bloqueado', conteudo=NULL, erro=$2, provedor=$3,
+         modelo=$4, custo_centavos=$5, gerado_em=now()`,
+      [modulo, erro, r.provedor, r.modelo, r.custoCentavos],
+    );
+    return { estado: 'bloqueado', erro };
+  }
+
+  await q(
+    `INSERT INTO exemplo_saidas (modulo, estado, conteudo, erro, provedor, modelo, custo_centavos, gerado_em)
+     VALUES ($1,'pronto',$2,NULL,$3,$4,$5,now())
+     ON CONFLICT (modulo) DO UPDATE SET estado='pronto', conteudo=$2, erro=NULL, provedor=$3,
+       modelo=$4, custo_centavos=$5, gerado_em=now()`,
+    [modulo, JSON.stringify(parseSaida(r.texto)), r.provedor, r.modelo, r.custoCentavos],
+  );
+  return { estado: 'pronto' };
 }

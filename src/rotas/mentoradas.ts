@@ -61,7 +61,7 @@ export default async function rotasMentoradas(app: FastifyInstance) {
 
     return res.type('text/html').send(
       pagina(
-        { titulo: 'Mentoradas', capa: { selo: 'Painel', titulo: 'Mentoradas' } },
+        { admin: true, titulo: 'Mentoradas', capa: { selo: 'Painel', titulo: 'Mentoradas' } },
         `<div class="cartao">${corpo}</div>
         <div class="cartao">
           <h2>Cadastrar</h2>
@@ -128,7 +128,7 @@ export default async function rotasMentoradas(app: FastifyInstance) {
 
     return res.type('text/html').send(
       pagina(
-        { titulo: 'Link de acesso', capa: { selo: 'Painel', titulo: `Link para ${esc(m.nome)}` } },
+        { admin: true, titulo: 'Link de acesso', capa: { selo: 'Painel', titulo: `Link para ${esc(m.nome)}` } },
         `<div class="cartao">
           <div class="aviso">Este link vale por <strong>30 minutos</strong> e por um acesso só.
             Depois que ela entrar, a sessão dela dura duas semanas.</div>
@@ -189,7 +189,7 @@ export default async function rotasMentoradas(app: FastifyInstance) {
 
     return res.type('text/html').send(
       pagina(
-        { titulo: m.nome, capa: { selo: 'Mentorada', titulo: m.nome, sub: m.email } },
+        { admin: true, titulo: m.nome, capa: { selo: 'Mentorada', titulo: m.nome, sub: m.email } },
         `${
           alertas.length
             ? `<div class="cartao"><div class="aviso"><strong>Há ${alertas.length}

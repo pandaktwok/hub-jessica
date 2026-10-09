@@ -72,17 +72,18 @@ Para gerar uma senha de banco:
 onde guardar os arquivos (`/config/armazenamento`). Ficam fora do assistente da mentora
 de propósito: chave de API e caminho de pasta não são decisão dela.
 
-**Da mentora, em sete etapas** (`/setup`):
+**Da mentora, em seis etapas** (`/setup`). A roda "Conecte a sua IA" e o botão "Pasta" ficam na barra de cima:
 
 | # | Etapa | O que acontece |
 |---|-------|----------------|
-| 1 | Sua conta | Cria a conta de administradora. Sem script de seed |
-| 2 | Seu perfil | Nome, marca e como a assistente se apresenta. Nada disso fica no código |
-| 3 | Categorias | `mentoria` e `mentoria pessoal` já vêm criadas; dá para acrescentar outras |
-| 4 | Módulos e material | **A etapa que importa.** Por módulo, ela sobe o material dela e ajusta as instruções |
-| 5 | Gerar as skills | O sistema extrai o método dela do material e escreve as skills |
-| 6 | Consentimento | Ela escreve os quatro textos. Sem isso, o Hub recusa cadastro de mentorada |
-| 7 | Preço | Preço por cliente, com os cenários de volume e o custo do programa |
+| 1 | Sua conta | Cria a conta de administradora |
+| 2 | Perfil e voz | Nome, marca, e como o assistente fala (opções marcadas, observações e um texto de exemplo). Vira a skill `persona-assistente` |
+| 3 | Pasta | Escolhe uma pasta do computador dela (Chrome/Edge); skills e PDFs são gravados lá |
+| 4 | Os seis módulos | Por módulo: responde as perguntas de entrada, sobe documentos (com citação opcional) e gera o PDF de exemplo do que a IA responderia |
+| 5 | Skills geradas | Arquivos .md por módulo, visíveis e baixáveis |
+| 6 | Preço | Dois pacotes (mensal e anual) com custo de hospedagem e de IA calculados na hora |
+
+Categorias do acervo e textos de consentimento saíram desta fase (voltam com o Second Brain e na próxima revisão).
 
 A etapa 4 é a calibragem: é ali que a inteligência artificial aprende a escrever no tom
 da mentora, a partir do material que ela sobe. Tudo o mais é encanamento em volta disso.
