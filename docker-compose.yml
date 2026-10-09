@@ -40,6 +40,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       META_API_KEY: ${META_API_KEY:-}
+      SENHA_REINICIAR: ${SENHA_REINICIAR:-}
     volumes:
       - dados_acervo:/dados/acervo
     # Só o proxy alcança a aplicação. A porta fica presa no localhost para

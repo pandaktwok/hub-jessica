@@ -21,6 +21,7 @@ import rotasSkills from './rotas/skills.ts';
 import rotasPasta from './rotas/pasta.ts';
 import rotasModulos from './rotas/modulos.ts';
 import rotasPreco from './rotas/preco.ts';
+import rotasReiniciar from './rotas/reiniciar.ts';
 
 const app = Fastify({
   logger: { level: process.env.LOG_NIVEL ?? 'info' },
@@ -143,6 +144,7 @@ await app.register(rotasSkills);
 await app.register(rotasPasta);
 await app.register(rotasModulos);
 await app.register(rotasPreco);
+await app.register(rotasReiniciar);
 
 // ------------------------------------------------------------------ painel
 

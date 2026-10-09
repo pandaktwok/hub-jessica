@@ -209,6 +209,10 @@ export function pagina(o: OpcoesPagina, corpo: string): string {
     <a href="/admin/skills">Skills</a>
   </div>
   <div class="direita">
+    <a class="roda" href="/reiniciar" title="Apagar os dados do teste e recomeçar">
+      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg>
+      <span>Reiniciar teste</span>
+    </a>
     <a class="roda" href="/setup/pasta" title="Pasta do seu computador">
       <svg viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.2l2 2.2h8.8A1.5 1.5 0 0 1 21 8.7v8.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>
       <span>Pasta</span><span class="pasta-nome" id="pasta-nome"></span>
