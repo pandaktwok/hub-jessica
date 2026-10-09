@@ -1,0 +1,27 @@
+# Proxy de entrada. Com DOMINIO definido no .env, o Caddy pede e renova o
+# certificado sozinho no Let's Encrypt. Sem DOMINIO, serve em http na porta 80.
+{$DOMINIO::80} {
+	encode zstd gzip
+
+	# O Hub precisa saber que a conexão original veio em https, senão os links
+	# mágicos saem com http e o cookie de sessão não volta.
+	reverse_proxy app:3000 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/acesso.log {
+			roll_size 10MiB
+			roll_keep 3
+		}
+	}
+}

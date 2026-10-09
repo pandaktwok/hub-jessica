@@ -26,7 +26,25 @@ nano .env                 # preencha POSTGRES_PASSWORD
 docker compose up -d --build
 ```
 
-Abra `http://IP-DA-MAQUINA:3000`. Ele leva direto para a configuração inicial.
+Abra `http://IP-DA-MAQUINA`. Ele leva direto para a configuração inicial.
+
+### Com domínio e HTTPS
+
+Aponte um registro A do seu subdomínio para o IP da máquina, **espere o DNS propagar**, e
+preencha no `.env`:
+
+```
+DOMINIO=jessica.seudominio.com
+URL_PUBLICA=https://jessica.seudominio.com
+COOKIE_SEGURO=true
+```
+
+O proxy (Caddy) pede o certificado ao Let's Encrypt na primeira subida e renova sozinho.
+Se o DNS ainda não estiver apontando quando você subir, o certificado falha e o Caddy
+fica tentando: arrume o DNS e rode `docker compose restart proxy`.
+
+`COOKIE_SEGURO=true` é obrigatório com HTTPS. Sem isso o cookie de sessão não volta e
+ninguém consegue entrar.
 
 As migrações do banco rodam sozinhas na partida. Não existe comando de SQL para dar na mão.
 
@@ -180,7 +198,7 @@ Não junte as duas numa função com uma política só.
 |---|---|---|
 | RAM | 4 GB | 8 GB |
 | Disco | 20 GB | 50 GB |
-| Portas | 3000 | 80 e 443 atrás de proxy |
+| Portas | 80 e 443 livres | 80 e 443 livres |
 
 A KVM 1 da Hostinger (4 GB) roda o que existe hoje. Quando entrar a geração do PDF do
 Mapa, que usa um Chromium invisível, 4 GB fica apertado dividindo com o Postgres — aí é

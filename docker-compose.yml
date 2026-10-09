@@ -35,19 +35,46 @@ services:
       LOG_NIVEL: ${LOG_NIVEL:-info}
       COOKIE_SEGURO: ${COOKIE_SEGURO:-false}
       LLM_MODE: ${LLM_MODE:-}
+      URL_PUBLICA: ${URL_PUBLICA:-}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       META_API_KEY: ${META_API_KEY:-}
     volumes:
       - dados_acervo:/dados/acervo
+    # Só o proxy alcança a aplicação. A porta fica presa no localhost para
+    # depuração pelo próprio servidor, não exposta na internet.
     ports:
-      - "${PORTA_EXTERNA:-3000}:3000"
+      - "127.0.0.1:${PORTA_LOCAL:-3000}:3000"
     deploy:
       resources:
         limits:
           memory: 1G
 
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      DOMINIO: ${DOMINIO:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+      - caddy_log:/var/log/caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
 volumes:
   dados_banco:
   dados_acervo:
+  caddy_dados:
+  caddy_config:
+  caddy_log:
