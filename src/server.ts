@@ -16,7 +16,7 @@ import {
 } from './auth.ts';
 import rotasSetup, { etapas, setupCompleto } from './rotas/setup.ts';
 import rotasConsultoria from './rotas/consultoria.ts';
-import rotasMentoradas from './rotas/mentoradas.ts';
+import rotasMentoradas, { rotaMaterial } from './rotas/mentoradas.ts';
 import rotasSkills from './rotas/skills.ts';
 
 const app = Fastify({
@@ -135,6 +135,7 @@ app.get('/sair', async (req: any, res) => {
 await app.register(rotasSetup);
 await app.register(rotasConsultoria);
 await app.register(rotasMentoradas);
+await app.register(rotaMaterial);
 await app.register(rotasSkills);
 
 // ------------------------------------------------------------------ painel

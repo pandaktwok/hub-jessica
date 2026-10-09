@@ -13,13 +13,14 @@ export interface Modulo {
   titulo: string;
 }
 
+// Títulos conforme a Especificação Funcional da Jessica. Não renomeie sem o documento.
 export const MODULOS: Modulo[] = [
-  { numero: 1, titulo: 'Persona' },
-  { numero: 2, titulo: 'Diferenciais' },
-  { numero: 3, titulo: 'Mensagem' },
-  { numero: 4, titulo: 'Precificação' },
-  { numero: 5, titulo: 'Protocolos e ofertas' },
-  { numero: 6, titulo: 'Plano de ação' },
+  { numero: 1, titulo: 'Diagnóstico de Cliente Ideal' },
+  { numero: 2, titulo: 'Mapa de Forças e Ativos' },
+  { numero: 3, titulo: 'Nome do Método' },
+  { numero: 4, titulo: 'Precificação Sugerida' },
+  { numero: 5, titulo: 'Protocolos e Ofertas' },
+  { numero: 6, titulo: 'Posicionamento em Redes Sociais' },
 ];
 
 async function textoPrompt(slug: string): Promise<string> {
@@ -103,30 +104,33 @@ async function numerosModulo4(diagnosticoId: string): Promise<string> {
     const n = Number(String(rs.find((r) => r.campo === c)?.valor ?? '').replace(',', '.'));
     return Number.isFinite(n) ? n : 0;
   };
-  const preco = v('cobra_hoje');
-  const horas = v('horas_por_atendimento');
-  const porMes = v('atendimentos_por_mes');
-  const custoFixo = v('custo_fixo_mes');
+  // Fórmula da Especificação Funcional, seção do módulo 4:
+  // valor da hora = (valor médio do atendimento x atendimentos por semana) / horas por semana
+  const valorMedio = v('valor_medio');
+  const atendSemana = v('atend_semana');
+  const horasDia = v('horas_dia');
+  const custoFixo = v('custo_fixo');
 
-  const valorHora = horas > 0 ? preco / horas : 0;
-  const receita = preco * porMes;
-  const horasMes = horas * porMes;
-  const sobra = receita - custoFixo;
-  const sobraHora = horasMes > 0 ? sobra / horasMes : 0;
-  const precoEquilibrio = porMes > 0 ? custoFixo / porMes : 0;
+  const horasSemana = horasDia * 5;
+  const valorHora = horasSemana > 0 ? (valorMedio * atendSemana) / horasSemana : 0;
+  const receitaSemana = valorMedio * atendSemana;
+  const receitaMes = receitaSemana * 4.33;
+  const atendMes = atendSemana * 4.33;
+  const sobra = receitaMes - custoFixo;
+  const precoEquilibrio = atendMes > 0 ? custoFixo / atendMes : 0;
 
-  const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const brl = (n: number) =>
+    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
   return `NÚMEROS JÁ CALCULADOS (use exatamente estes, não refaça conta nenhuma):
-- Preço atual por atendimento: ${brl(preco)}
-- Horas por atendimento, com preparo e retorno: ${horas}
-- Valor-hora atual: ${brl(valorHora)}
-- Atendimentos por mês: ${porMes}
-- Horas trabalhadas no mês nesse serviço: ${horasMes}
-- Receita mensal desse serviço: ${brl(receita)}
-- Custo fixo mensal: ${brl(custoFixo)}
+- Valor médio por atendimento, hoje: ${brl(valorMedio)}
+- Atendimentos por semana: ${atendSemana}
+- Horas de atendimento por dia: ${horasDia} (${horasSemana} por semana, considerando 5 dias)
+- Valor da hora atual: ${brl(valorHora)}
+- Receita semanal: ${brl(receitaSemana)}
+- Receita mensal aproximada: ${brl(receitaMes)} (${Math.round(atendMes)} atendimentos)
+${custoFixo > 0 ? `- Custo fixo mensal: ${brl(custoFixo)}
 - Sobra mensal depois do custo fixo: ${brl(sobra)}
-- Sobra por hora trabalhada: ${brl(sobraHora)}
-- Preço de equilíbrio (abaixo disso ela paga para trabalhar): ${brl(precoEquilibrio)}`;
+- Preço de equilíbrio por atendimento: ${brl(precoEquilibrio)}` : '- Ela não informou custo fixo, então não há ponto de equilíbrio para citar.'}`;
 }
 
 export interface ResultadoGeracao {

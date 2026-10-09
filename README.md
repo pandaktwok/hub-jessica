@@ -48,22 +48,37 @@ Para gerar uma senha de banco:
 
 ---
 
-## A configuração inicial, em nove etapas
+## Duas configurações, com donos diferentes
+
+**Técnica, de quem instala.** Conectar a inteligência artificial (`/config/ia`) e escolher
+onde guardar os arquivos (`/config/armazenamento`). Ficam fora do assistente da mentora
+de propósito: chave de API e caminho de pasta não são decisão dela.
+
+**Da mentora, em sete etapas** (`/setup`):
 
 | # | Etapa | O que acontece |
 |---|-------|----------------|
 | 1 | Sua conta | Cria a conta de administradora. Sem script de seed |
-| 2 | Conectar a IA | Escolhe o provedor e faz uma chamada de teste de verdade antes de aceitar |
-| 3 | Onde guardar | Escreve e lê um arquivo de teste no caminho escolhido antes de aceitar |
-| 4 | Suas skills | Lista automática quando dá, colagem guiada quando não dá. Opcional |
-| 5 | Categorias | `mentoria` e `mentoria pessoal` já vêm criadas; dá para acrescentar outras |
-| 6 | Seu perfil | Nome, marca e como a assistente se apresenta. Nada disso fica escrito no código |
-| 7 | Módulos e material | **A etapa que importa.** Por módulo, ela sobe o material dela e ajusta as instruções da IA |
-| 8 | Consentimento | Ela escreve os quatro textos. Sem isso, o Hub recusa cadastro de mentorada |
-| 9 | Custos e preço | Calculadora de custo de servidor, custo de IA e margem |
+| 2 | Seu perfil | Nome, marca e como a assistente se apresenta. Nada disso fica no código |
+| 3 | Categorias | `mentoria` e `mentoria pessoal` já vêm criadas; dá para acrescentar outras |
+| 4 | Módulos e material | **A etapa que importa.** Por módulo, ela sobe o material dela e ajusta as instruções |
+| 5 | Gerar as skills | O sistema extrai o método dela do material e escreve as skills |
+| 6 | Consentimento | Ela escreve os quatro textos. Sem isso, o Hub recusa cadastro de mentorada |
+| 7 | Preço | Preço por cliente, com os cenários de volume e o custo do programa |
 
-A etapa 7 é a calibragem: é ali que a inteligência artificial aprende a escrever no tom
+A etapa 4 é a calibragem: é ali que a inteligência artificial aprende a escrever no tom
 da mentora, a partir do material que ela sobe. Tudo o mais é encanamento em volta disso.
+
+### PDF de consulta: anonimizado na entrada
+
+Ela pode subir o PDF de uma consulta que já fez. O texto é extraído e **os dados pessoais
+são retirados antes de ir para o banco**: CPF, cartão SUS, RG, telefone, e-mail, CEP,
+datas, prontuário, endereço, nomes em campo rotulado e nomes próprios soltos no texto. O
+original fica só na pasta do servidor; o que o sistema usa e o que vai para a geração de
+skills é a versão limpa, e a tela mostra o que foi retirado.
+
+Isto reduz o risco, não elimina. Identificação em forma que nenhuma regra pega pode
+passar, e a tela diz isso para ela.
 
 ---
 

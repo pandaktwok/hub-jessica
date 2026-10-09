@@ -74,12 +74,26 @@ src/
   verificador.ts       glossário e barreira clínica (políticas opostas)
   geracao.ts           motor: contexto acumulado com orçamento, chamada, verificação
   ia/index.ts          quatro provedores atrás de uma interface, mais modo stub
-  rotas/setup.ts       assistente de nove etapas
+  anonimizar.ts        retira dados pessoais de PDF de consulta, na entrada
+  rotas/setup.ts       assistente de sete etapas, mais /config técnico
   rotas/consultoria.ts o fluxo da mentorada: link, módulos, revisão, Mapa
   rotas/mentoradas.ts  painel: cadastro, link de acesso, ficha
   rotas/skills.ts      geração de skills a partir do material
   visao/layout.ts      HTML e CSS
 ```
+
+## O conteúdo vem do PDF da Jessica
+
+As perguntas dos seis módulos, os títulos e o que a IA deve gerar em cada um estão na
+migração `005_conteudo_real.sql`, tirados da Especificação Funcional dela. Antes disso o
+sistema usava perguntas inventadas e errava o nome de dois módulos. **Não invente
+pergunta nem renomeie módulo sem o documento na mão.**
+
+Os módulos são: 1 Diagnóstico de Cliente Ideal, 2 Mapa de Forças e Ativos, 3 Nome do
+Método, 4 Precificação Sugerida, 5 Protocolos e Ofertas, 6 Posicionamento em Redes Sociais.
+
+A faixa de mercado do módulo 4 **é informada pela própria mentorada**, numa pergunta de
+entrada. A IA não tem outra fonte e não deve inventar uma.
 
 ## Decisões de implementação que têm motivo
 
@@ -131,3 +145,4 @@ desenvolver e testar; teste ponta a ponta que gasta API ninguém roda.
 - Trial de 15 dias e qualquer cobrança
 - Integração com o Second Brain (o Hub funciona sem, por desenho)
 - Revogação, retenção e exclusão pela própria mentorada (as colunas existem, as telas não)
+- OCR: PDF digitalizado como imagem não tem texto extraível, e o sistema avisa em vez de fingir

@@ -218,3 +218,27 @@ export default async function rotasMentoradas(app: FastifyInstance) {
     );
   });
 }
+
+/** Material consolidado, já anonimizado: o mesmo texto que alimenta as skills. */
+export async function rotaMaterial(app: FastifyInstance) {
+  app.get('/admin/material.md', async (req: any, res) => {
+    if (!req.mentora) return res.redirect('/entrar');
+    const mats = await q<{ modulo: number; nome: string; conteudo: string; anonimizado: boolean }>(
+      `SELECT coalesce(modulo,0) AS modulo, nome, conteudo, anonimizado
+         FROM materiais WHERE conteudo IS NOT NULL ORDER BY coalesce(modulo,0), criado_em`,
+    );
+    const partes = ['# Material de referência', '', 'Versão sem dados pessoais, a mesma que o sistema usa para gerar as skills.', ''];
+    let atual = -1;
+    for (const m of mats) {
+      if (m.modulo !== atual) {
+        atual = m.modulo;
+        partes.push('', `## ${atual === 0 ? 'Geral' : `Módulo ${atual}`}`, '');
+      }
+      partes.push(`### ${m.nome}${m.anonimizado ? ' (anonimizado)' : ''}`, '', m.conteudo, '');
+    }
+    return res
+      .type('text/markdown; charset=utf-8')
+      .header('content-disposition', 'attachment; filename="material.md"')
+      .send(partes.join('\n'));
+  });
+}

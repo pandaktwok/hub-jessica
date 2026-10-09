@@ -49,8 +49,13 @@ export async function esperarBanco(tentativas = 30): Promise<void> {
   for (let i = 1; i <= tentativas; i++) {
     try {
       await pool.query('SELECT 1');
+      if (i > 1) console.log('[banco] conectado.');
       return;
     } catch (e: any) {
+      // Sem isto a partida fica muda por 30 segundos e quem instala acha que travou.
+      if (i === 1 || i % 5 === 0) {
+        console.log(`[banco] esperando o Postgres aceitar conexão (tentativa ${i} de ${tentativas})…`);
+      }
       if (i === tentativas) {
         throw new Error(
           `Não consegui conectar no Postgres depois de ${tentativas} tentativas. ` +

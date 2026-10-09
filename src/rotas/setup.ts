@@ -6,8 +6,16 @@ import { hashSenha, abrirSessaoMentora, COOKIE_MENTORA, opcoesCookie } from '../
 import { pagina, trilha, esc } from '../visao/layout.ts';
 import { configIA, testar, MODELO_PADRAO, type Provedor } from '../ia/index.ts';
 import { verificarGlossario } from '../verificador.ts';
+import { anonimizar, textoDoPdf } from '../anonimizar.ts';
 
-const TOTAL = 9;
+// Conectar a IA e escolher onde guardar os arquivos saíram do assistente dela:
+// são configuração técnica de quem instala, não decisão da mentora. As rotas
+// continuam existindo em /config, fora da contagem de etapas.
+const TOTAL = 7;
+
+const NUMERO: Record<string, number> = {
+  conta: 1, perfil: 2, categorias: 3, modulos: 4, skills: 5, consentimento: 6, precificacao: 7,
+};
 
 interface Etapa {
   numero: number;
@@ -47,8 +55,11 @@ async function concluir(slug: string, dados: Record<string, unknown> = {}) {
 
 function molde(n: number, titulo: string, corpo: string, sub?: string) {
   return pagina(
-    { titulo: `${titulo} — Configuração`, capa: { selo: 'Configuração inicial', titulo, sub } },
-    `${trilha(n, TOTAL)}<div class="cartao">${corpo}</div>
+    {
+      titulo: `${titulo} — Configuração`,
+      capa: { selo: n ? 'Configuração inicial' : 'Ajuste técnico', titulo, sub },
+    },
+    `${n ? trilha(n, TOTAL) : ''}<div class="cartao">${corpo}</div>
      <div class="passo-txt"><a href="/setup">Voltar para a lista de etapas</a></div>`,
   );
 }
@@ -108,13 +119,13 @@ export default async function rotasSetup(app: FastifyInstance) {
     const existe = await um('SELECT id FROM mentora LIMIT 1');
     if (existe) {
       return res.type('text/html').send(
-        molde(1, 'Sua conta', `<div class="ok">A conta já foi criada.</div>
+        molde(NUMERO.conta, 'Sua conta', `<div class="ok">A conta já foi criada.</div>
           <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`),
       );
     }
     return res.type('text/html').send(
       molde(
-        1,
+        NUMERO.conta,
         'Sua conta',
         `<p class="sub">Esta é a conta que você vai usar para entrar no painel. Ninguém mais tem acesso a ela.</p>
         <form method="post" action="/setup/conta">
@@ -127,7 +138,7 @@ export default async function rotasSetup(app: FastifyInstance) {
             <input id="senha" name="senha" type="password" required minlength="10" autocomplete="new-password"></div>
           ${botoes()}
         </form>`,
-        'Etapa 1 de 9',
+        undefined,
       ),
     );
   });
@@ -136,7 +147,7 @@ export default async function rotasSetup(app: FastifyInstance) {
     const { nome, email, senha } = req.body;
     if (!nome?.trim() || !email?.trim() || !senha || senha.length < 10) {
       return res.type('text/html').send(
-        molde(1, 'Sua conta', `<div class="erro">Preencha nome, e-mail e uma senha de pelo menos 10 caracteres.</div>
+        molde(NUMERO.conta, 'Sua conta', `<div class="erro">Preencha nome, e-mail e uma senha de pelo menos 10 caracteres.</div>
           <div class="acoes"><a class="botao" href="/setup/conta">Voltar</a></div>`),
       );
     }
@@ -155,7 +166,7 @@ export default async function rotasSetup(app: FastifyInstance) {
   });
 
   // ------------------------------------------------------------- 2. IA
-  app.get('/setup/ia', async (_req, res) => {
+  app.get('/config/ia', async (_req, res) => {
     const cfg = await configIA();
     const opcoes = (['claude', 'openai', 'gemini', 'meta'] as Provedor[])
       .map((p) => {
@@ -165,11 +176,11 @@ export default async function rotasSetup(app: FastifyInstance) {
       .join('');
     return res.type('text/html').send(
       molde(
-        2,
+        0,
         'Conectar a inteligência artificial',
         `<p class="sub">O Hub usa uma inteligência artificial para montar os textos do diagnóstico.
           A chave fica no arquivo de configuração do servidor, nunca aqui na tela.</p>
-        <form method="post" action="/setup/ia">
+        <form method="post" action="/config/ia">
           <div class="campo"><label for="provedor">Qual provedor</label>
             <select id="provedor" name="provedor">${opcoes}</select>
             <div class="exemplo">A chave correspondente precisa estar no .env: CLAUDE_API_KEY,
@@ -185,22 +196,22 @@ export default async function rotasSetup(app: FastifyInstance) {
     );
   });
 
-  app.post<{ Body: { provedor: Provedor; modelo?: string } }>('/setup/ia', async (req, res) => {
+  app.post<{ Body: { provedor: Provedor; modelo?: string } }>('/config/ia', async (req, res) => {
     const cfg = { provedor: req.body.provedor, modelo: req.body.modelo?.trim() || undefined };
     const r = await testar(cfg);
     if (!r.ok) {
       return res.type('text/html').send(
-        molde(2, 'Conectar a inteligência artificial',
+        molde(0, 'Conectar a inteligência artificial',
           `<div class="erro"><strong>A conexão não funcionou.</strong><br>${esc(r.detalhe)}</div>
            <p class="sub">A configuração não foi salva. Corrija a chave no arquivo .env do servidor,
              reinicie e tente de novo.</p>
-           <div class="acoes"><a class="botao" href="/setup/ia">Tentar de novo</a></div>`),
+           <div class="acoes"><a class="botao" href="/config/ia">Tentar de novo</a></div>`),
       );
     }
     await gravarConfig('ia', cfg);
     await concluir('ia', { provedor: cfg.provedor, modelo: cfg.modelo ?? MODELO_PADRAO[cfg.provedor] });
     return res.type('text/html').send(
-      molde(2, 'Conectar a inteligência artificial',
+      molde(0, 'Conectar a inteligência artificial',
         `<div class="ok"><strong>Funcionou.</strong> A inteligência artificial respondeu:
           <br><em>${esc(r.detalhe)}</em></div>
          <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`),
@@ -208,15 +219,15 @@ export default async function rotasSetup(app: FastifyInstance) {
   });
 
   // ------------------------------------------------------------- 3. armazenamento
-  app.get('/setup/armazenamento', async (_req, res) => {
+  app.get('/config/armazenamento', async (_req, res) => {
     const atual = (await lerConfig<{ caminho: string }>('armazenamento'))?.caminho ?? '/dados/acervo';
     return res.type('text/html').send(
       molde(
-        3,
+        0,
         'Onde guardar os arquivos',
         `<p class="sub">Os arquivos ficam em pasta no servidor. O Hub escreve e lê um arquivo de
           teste agora para confirmar que o caminho funciona de verdade.</p>
-        <form method="post" action="/setup/armazenamento">
+        <form method="post" action="/config/armazenamento">
           <div class="campo"><label for="caminho">Caminho da pasta</label>
             <div class="dica">No Docker, use um caminho dentro do volume montado.</div>
             <input id="caminho" name="caminho" type="text" value="${esc(atual)}" required>
@@ -227,7 +238,7 @@ export default async function rotasSetup(app: FastifyInstance) {
     );
   });
 
-  app.post<{ Body: { caminho: string } }>('/setup/armazenamento', async (req, res) => {
+  app.post<{ Body: { caminho: string } }>('/config/armazenamento', async (req, res) => {
     const caminho = req.body.caminho?.trim();
     try {
       await mkdir(caminho, { recursive: true });
@@ -238,16 +249,16 @@ export default async function rotasSetup(app: FastifyInstance) {
       if (lido !== 'ok') throw new Error('o arquivo de teste voltou diferente do que foi escrito');
     } catch (e: any) {
       return res.type('text/html').send(
-        molde(3, 'Onde guardar os arquivos',
+        molde(0, 'Onde guardar os arquivos',
           `<div class="erro"><strong>Não consegui escrever em ${esc(caminho)}.</strong><br>${esc(e.message)}</div>
            <p class="sub">Confira se a pasta existe no servidor e se o contêiner tem permissão de escrita nela.</p>
-           <div class="acoes"><a class="botao" href="/setup/armazenamento">Tentar de novo</a></div>`),
+           <div class="acoes"><a class="botao" href="/config/armazenamento">Tentar de novo</a></div>`),
       );
     }
     await gravarConfig('armazenamento', { caminho });
     await concluir('armazenamento', { caminho });
     return res.type('text/html').send(
-      molde(3, 'Onde guardar os arquivos',
+      molde(0, 'Onde guardar os arquivos',
         `<div class="ok">Escrita e leitura confirmadas em <strong>${esc(caminho)}</strong>.</div>
          <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`),
     );
@@ -266,10 +277,14 @@ export default async function rotasSetup(app: FastifyInstance) {
 
     return res.type('text/html').send(
       molde(
-        4,
-        'Suas skills',
-        `<p class="sub">Se a sua conta de inteligência artificial não deixa o Hub ler a lista
-          sozinho, dá para trazer na mão. É rápido.</p>
+        NUMERO.skills,
+        'Gerar as suas skills',
+        `<p class="sub">As suas skills saem do material que você subiu em cada módulo. Elas
+          descrevem o seu método de um jeito que o sistema consegue seguir na hora de montar
+          o diagnóstico de cada mentorada.</p>
+        <div class="acoes"><a class="botao" href="/admin/skills">Abrir a geração de skills</a></div>
+        <h3>Ou trazer uma lista pronta</h3>
+        <p class="sub">Se você já tem skills montadas em outro lugar, dá para colar aqui.</p>
         <div class="aviso"><strong>Copie a frase abaixo e cole na sua inteligência artificial:</strong><br>
           <em>Liste todas as skills que você tem disponíveis, uma por linha, no formato
           nome — descrição curta. Sem texto antes nem depois.</em><br>
@@ -329,8 +344,8 @@ resumir-pdf — resume um documento longo"></textarea></div>
       .join('');
     return res.type('text/html').send(
       molde(
-        5,
-        'Categorias do acervo',
+        NUMERO.categorias,
+        'Categorias do seu acervo',
         `<p class="sub">Toda vez que algo for guardado no acervo, o Hub pergunta em qual categoria.
           Ele não escolhe sozinho.</p>
         <table><thead><tr><th>Categoria</th><th>Identificador</th><th></th></tr></thead><tbody>${linhas}</tbody></table>
@@ -373,7 +388,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
     const p = (await lerConfig<any>('perfil')) ?? {};
     return res.type('text/html').send(
       molde(
-        6,
+        NUMERO.perfil,
         'Seu perfil de mentora',
         `<p class="sub">Nada do que está aqui fica escrito dentro do programa. É tudo configuração,
           o que significa que você pode mudar quando quiser.</p>
@@ -431,7 +446,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
     const geral = porModulo.get(0) ?? 0;
     return res.type('text/html').send(
       molde(
-        7,
+        NUMERO.modulos,
         'Os seis módulos e o seu material',
         `<p class="sub">Esta é a etapa que define a qualidade do diagnóstico. Em cada módulo você
           sobe o seu material (livros, referências, anotações, exemplos de atendimento) e ajusta
@@ -444,7 +459,10 @@ resumir-pdf — resume um documento longo"></textarea></div>
         <ul class="lista-etapas">${linhas}</ul>
         <form method="post" action="/setup/modulos">
           ${botoes('/setup', 'Marcar esta etapa como concluída')}
-        </form>`,
+        </form>
+        <p class="sub" style="margin-top:18px"><small>
+          <a href="/admin/material.md">Baixar todo o material em um arquivo</a> — é a versão já
+          sem dados pessoais, a mesma que o sistema usa.</small></p>`,
       ),
     );
   });
@@ -487,7 +505,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
 
     return res.type('text/html').send(
       molde(
-        7,
+        NUMERO.modulos,
         titulo,
         `${listaMat}
         <form method="post" action="/setup/modulos/${n}/material" enctype="multipart/form-data">
@@ -532,6 +550,10 @@ resumir-pdf — resume um documento longo"></textarea></div>
     let bytes = 0;
     let tipo = 'texto';
 
+    let anonimo = false;
+    let removidos: Record<string, number> = {};
+    let aviso = '';
+
     const partes = (req as any).parts ? (req as any).parts() : null;
     if (partes) {
       for await (const parte of partes) {
@@ -546,6 +568,26 @@ resumir-pdf — resume um documento longo"></textarea></div>
             bytes = buf.length;
             tipo = 'arquivo';
             nome ||= parte.filename;
+
+            // PDF de consulta: o texto é extraído e anonimizado ANTES de ir para o
+            // banco. O original fica só no disco dela; o que o sistema usa é o limpo.
+            if (/\.pdf$/i.test(parte.filename)) {
+              try {
+                const bruto = await textoDoPdf(buf);
+                if (bruto.length < 40) {
+                  aviso = 'O PDF não tem texto selecionável, parece ser digitalizado como imagem. O arquivo foi guardado, mas o sistema não consegue ler o conteúdo dele.';
+                } else {
+                  const r = anonimizar(bruto);
+                  texto = r.texto.slice(0, 500_000);
+                  removidos = r.removidos;
+                  anonimo = true;
+                }
+              } catch {
+                aviso = 'Não consegui ler o texto deste PDF. O arquivo foi guardado assim mesmo.';
+              }
+            } else if (/\.(txt|md|csv)$/i.test(parte.filename)) {
+              texto = buf.toString('utf8').slice(0, 500_000);
+            }
           }
         } else {
           const v = String(parte.value ?? '');
@@ -558,8 +600,34 @@ resumir-pdf — resume um documento longo"></textarea></div>
     if (!nome) nome = texto ? texto.slice(0, 60) + '…' : 'material sem nome';
     if (texto || caminho) {
       await q(
-        'INSERT INTO materiais (modulo, nome, tipo, caminho, conteudo, bytes) VALUES ($1,$2,$3,$4,$5,$6)',
-        [n, nome, tipo, caminho, texto, bytes],
+        `INSERT INTO materiais (modulo, nome, tipo, caminho, conteudo, bytes, anonimizado, removidos)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [n, nome, tipo, caminho, texto, bytes, anonimo, JSON.stringify(removidos)],
+      );
+    }
+
+    if (anonimo || aviso) {
+      const lista = Object.entries(removidos)
+        .map(([k, v]) => `${v} ${k}${v > 1 ? 's' : ''}`)
+        .join(', ');
+      return res.type('text/html').send(
+        molde(
+          NUMERO.modulos,
+          'Material guardado',
+          `${
+            anonimo
+              ? `<div class="ok"><strong>Dados pessoais retirados antes de guardar.</strong>
+                  ${lista ? `Saíram do texto: ${esc(lista)}.` : 'Nada identificável foi encontrado.'}</div>
+                 <p class="sub">O que o sistema vai usar para gerar as suas skills é a versão sem
+                   identificação. O arquivo original fica guardado na pasta do servidor e nunca é
+                   mostrado para nenhuma mentorada.</p>
+                 <p class="sub"><small>Isto reduz o risco, não elimina. Se o texto trouxer alguma
+                   identificação em forma que nenhuma regra pega, ela pode passar. Vale conferir
+                   quando o material for de uma consulta real.</small></p>`
+              : `<div class="aviso">${esc(aviso)}</div>`
+          }
+          <div class="acoes"><a class="botao" href="/setup/modulos/${n}">Voltar ao módulo</a></div>`,
+        ),
       );
     }
     return res.redirect(`/setup/modulos/${n}`);
@@ -639,7 +707,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
     ).join('');
     return res.type('text/html').send(
       molde(
-        8,
+        NUMERO.consentimento,
         'Os textos de consentimento',
         `<p class="sub">Estes são os textos que cada mentorada vai ler e marcar antes de começar.
           Quem escreve é você: é a sua voz e é o seu risco. Os rascunhos abaixo são ponto de
@@ -660,7 +728,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
       const v = (req.body[c.chave] ?? '').trim();
       if (!v) {
         return res.type('text/html').send(
-          molde(8, 'Os textos de consentimento',
+          molde(NUMERO.consentimento, 'Os textos de consentimento',
             `<div class="erro">Faltou o texto de "${esc(c.titulo)}". Todos os quatro precisam estar preenchidos.</div>
              <div class="acoes"><a class="botao" href="/setup/consentimento">Voltar</a></div>`),
         );
@@ -676,7 +744,7 @@ resumir-pdf — resume um documento longo"></textarea></div>
         .map((a) => `<li>"${esc(a.proibida)}" — use ${esc(a.sugerida)}<br><small>${esc(a.trecho)}</small></li>`)
         .join('');
       return res.type('text/html').send(
-        molde(8, 'Os textos de consentimento',
+        molde(NUMERO.consentimento, 'Os textos de consentimento',
           `<div class="erro"><strong>Há palavras do glossário nos textos.</strong>
             <ul style="margin:8px 0 0 18px">${lista}</ul></div>
            <p class="sub">Os textos não foram salvos. Ajuste e envie de novo.</p>
@@ -689,53 +757,53 @@ resumir-pdf — resume um documento longo"></textarea></div>
     await gravarConfig('consentimento_versao', versao);
     await concluir('consentimento', { versao });
     return res.type('text/html').send(
-      molde(8, 'Os textos de consentimento',
+      molde(NUMERO.consentimento, 'Os textos de consentimento',
         `<div class="ok">Textos salvos na versão <strong>${esc(versao)}</strong>.
           A partir de agora fica registrado quem aceitou qual redação.</div>
          <div class="acoes"><a class="botao" href="/setup">Continuar</a></div>`),
     );
   });
 
-  // ------------------------------------------------------------- 9. precificação
+  // ------------------------------------------------------------- 7. precificação
   app.get('/setup/precificacao', async (_req, res) => {
     const p = (await lerConfig<any>('precificacao')) ?? {
+      preco_cliente: 1000,
       vps_mes: 78,
-      dolar: 5.4,
-      custo_ia_diagnostico_usd: 0.35,
       outros_mes: 0,
-      mentoradas_mes: 10,
-      preco: 2500,
-      trial_dias: 15,
+      custo_ia_usd: 0.35,
+      dolar: 5.4,
+      clientes_mes: 20,
+      nome_pacote: '',
     };
     return res.type('text/html').send(
       molde(
-        9,
-        'Custos e preço da sua mentoria',
-        `<p class="sub">Uma coisa que a conta mostra logo de cara: o custo de inteligência
-          artificial por diagnóstico é de centavos. O custo que pesa é o servidor, e ele é fixo.</p>
+        NUMERO.precificacao,
+        'O preço da sua mentoria',
+        `<p class="sub">Defina quanto você quer cobrar por cliente. O sistema mostra o que sobra
+          depois do custo de manter o programa no ar, em alguns cenários de volume.</p>
         <form method="post" action="/setup/precificacao">
-          <h3>O que você paga</h3>
-          <div class="campo"><label for="vps_mes">Servidor por mês, em reais</label>
+          <div class="campo"><label for="nome_pacote">Nome do pacote</label>
+            <input id="nome_pacote" name="nome_pacote" type="text" value="${esc(p.nome_pacote ?? '')}"
+              placeholder="Por exemplo: Diagnóstico de Posicionamento"></div>
+          <div class="campo"><label for="preco_cliente">Quanto você cobra por cliente</label>
+            <div class="dica">Valor cheio do pacote, por mentorada.</div>
+            <input id="preco_cliente" name="preco_cliente" type="number" step="0.01" value="${esc(p.preco_cliente)}" required></div>
+          <div class="campo"><label for="clientes_mes">Quantas clientes por mês você pretende atender</label>
+            <input id="clientes_mes" name="clientes_mes" type="number" value="${esc(p.clientes_mes)}"></div>
+
+          <h3>O que o programa custa</h3>
+          <div class="campo"><label for="vps_mes">Servidor por mês</label>
             <input id="vps_mes" name="vps_mes" type="number" step="0.01" value="${esc(p.vps_mes)}">
-            <div class="exemplo">Hostinger KVM 2 renova por R$ 77,99. O KVM 1 é mais barato mas aperta na hora de gerar o PDF.</div></div>
+            <div class="exemplo">A KVM 2 da Hostinger renova por R$ 77,99.</div></div>
           <div class="campo"><label for="outros_mes">Outros custos fixos por mês</label>
             <input id="outros_mes" name="outros_mes" type="number" step="0.01" value="${esc(p.outros_mes)}">
             <div class="exemplo">Domínio, e-mail, o que mais houver.</div></div>
-          <div class="campo"><label for="custo_ia_diagnostico_usd">Custo de IA por diagnóstico, em dólar</label>
-            <input id="custo_ia_diagnostico_usd" name="custo_ia_diagnostico_usd" type="number" step="0.01" value="${esc(p.custo_ia_diagnostico_usd)}">
-            <div class="exemplo">Entre 0,02 e 0,63 conforme o modelo. O Hub mede o real e atualiza isto depois.</div></div>
+          <div class="campo"><label for="custo_ia_usd">Custo de inteligência artificial por diagnóstico, em dólar</label>
+            <input id="custo_ia_usd" name="custo_ia_usd" type="number" step="0.01" value="${esc(p.custo_ia_usd)}">
+            <div class="exemplo">Entre 0,02 e 0,63 conforme o modelo. O sistema mede o real e você ajusta depois.</div></div>
           <div class="campo"><label for="dolar">Dólar</label>
             <input id="dolar" name="dolar" type="number" step="0.01" value="${esc(p.dolar)}"></div>
-
-          <h3>O que você cobra</h3>
-          <div class="campo"><label for="preco">Preço da sua mentoria, por mentorada</label>
-            <input id="preco" name="preco" type="number" step="0.01" value="${esc(p.preco)}"></div>
-          <div class="campo"><label for="mentoradas_mes">Quantas mentoradas por mês</label>
-            <input id="mentoradas_mes" name="mentoradas_mes" type="number" value="${esc(p.mentoradas_mes)}"></div>
-          <div class="campo"><label for="trial_dias">Teste grátis, em dias</label>
-            <input id="trial_dias" name="trial_dias" type="number" value="${esc(p.trial_dias)}">
-            <div class="exemplo">Zero desliga o teste grátis. A cobrança em si ainda não está construída.</div></div>
-          ${botoes('/setup', 'Calcular e salvar')}
+          ${botoes('/setup', 'Calcular')}
         </form>`,
       ),
     );
@@ -746,56 +814,60 @@ resumir-pdf — resume um documento longo"></textarea></div>
       const v = Number(String(req.body[k] ?? '').replace(',', '.'));
       return Number.isFinite(v) ? v : padrao;
     };
-    const dados = {
+    const d = {
+      nome_pacote: String(req.body.nome_pacote ?? '').trim().slice(0, 120),
+      preco_cliente: n('preco_cliente', 1000),
+      clientes_mes: Math.max(1, Math.round(n('clientes_mes', 20))),
       vps_mes: n('vps_mes', 78),
       outros_mes: n('outros_mes'),
-      custo_ia_diagnostico_usd: n('custo_ia_diagnostico_usd', 0.35),
+      custo_ia_usd: n('custo_ia_usd', 0.35),
       dolar: n('dolar', 5.4),
-      preco: n('preco'),
-      mentoradas_mes: Math.max(0, Math.round(n('mentoradas_mes'))),
-      trial_dias: Math.max(0, Math.round(n('trial_dias'))),
     };
 
-    const custoIaReais = dados.custo_ia_diagnostico_usd * dados.dolar;
-    const custoFixo = dados.vps_mes + dados.outros_mes;
-    const custoVariavel = custoIaReais * dados.mentoradas_mes;
-    const receita = dados.preco * dados.mentoradas_mes;
-    const lucro = receita - custoFixo - custoVariavel;
-    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-    const custoPorMentorada = dados.mentoradas_mes > 0 ? custoFixo / dados.mentoradas_mes + custoIaReais : custoFixo;
-
-    await gravarConfig('precificacao', dados);
-    await concluir('precificacao', {});
-
+    const custoIa = d.custo_ia_usd * d.dolar;
+    const custoFixo = d.vps_mes + d.outros_mes;
     const brl = (v: number) =>
       v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
 
+    // Cenários em volta do número que ela informou, para ela ver a conta mudando.
+    const volumes = [...new Set([5, 10, d.clientes_mes, 30, 50])].sort((a, b) => a - b);
+    const linhas = volumes
+      .map((v) => {
+        const receita = d.preco_cliente * v;
+        const custo = custoFixo + custoIa * v;
+        const sobra = receita - custo;
+        const porCliente = custo / v;
+        const destaque = v === d.clientes_mes;
+        return `<tr${destaque ? ' style="background:#FBF6EA"' : ''}>
+          <td>${v}${destaque ? ' <small>(o seu)</small>' : ''}</td>
+          <td class="num">${brl(receita)}</td>
+          <td class="num">${brl(custo)}</td>
+          <td class="num">${brl(porCliente)}</td>
+          <td class="num"><strong>${brl(sobra)}</strong></td>
+        </tr>`;
+      })
+      .join('');
+
+    await gravarConfig('precificacao', d);
+    await concluir('precificacao', {});
+
     return res.type('text/html').send(
       molde(
-        9,
-        'Custos e preço da sua mentoria',
-        `<table>
-          <tbody>
-            <tr><td>Receita no mês</td><td class="num">${brl(receita)}</td></tr>
-            <tr><td>Servidor e outros fixos</td><td class="num">− ${brl(custoFixo)}</td></tr>
-            <tr><td>Inteligência artificial (${dados.mentoradas_mes} diagnósticos)</td><td class="num">− ${brl(custoVariavel)}</td></tr>
-            <tr><td><strong>Sobra para você</strong></td><td class="num"><strong>${brl(lucro)}</strong></td></tr>
-            <tr><td>Margem sobre o custo do sistema</td><td class="num">${margem.toFixed(1).replace('.', ',')}%</td></tr>
-            <tr><td>Custo de sistema por mentorada</td><td class="num">${brl(custoPorMentorada)}</td></tr>
-          </tbody>
+        NUMERO.precificacao,
+        'O preço da sua mentoria',
+        `<p class="sub">${d.nome_pacote ? `<strong>${esc(d.nome_pacote)}</strong> a ` : 'A '}
+          ${brl(d.preco_cliente)} por cliente.</p>
+        <table>
+          <thead><tr><th>Clientes no mês</th><th>Receita</th><th>Custo do programa</th>
+            <th>Custo por cliente</th><th>Sobra</th></tr></thead>
+          <tbody>${linhas}</tbody>
         </table>
-        <div class="aviso"><strong>Esta margem não é o seu lucro.</strong> Ela desconta só o que o
-          programa custa para rodar: servidor e inteligência artificial. O seu tempo, que é o
-          custo de verdade de uma mentoria, não está aqui. O número alto quer dizer uma coisa só,
-          e é uma boa notícia: manter o sistema no ar custa quase nada perto do que você cobra.</div>
-        <div class="aviso">Um diagnóstico inteiro consome ${brl(custoIaReais)} de inteligência
-          artificial. O que pesa é o servidor, e ele custa o mesmo atendendo uma ou cinquenta.</div>
-        ${
-          dados.trial_dias > 0
-            ? `<p class="sub">Teste grátis de ${dados.trial_dias} dias anotado. A cobrança ainda não
-                está construída, então por enquanto isso é só um registro da sua decisão.</p>`
-            : ''
-        }
+        <div class="aviso"><strong>A sobra não é o seu lucro.</strong> Ela desconta só o que o
+          programa custa para rodar. O seu tempo, que é o custo de verdade de uma mentoria, não
+          está nesta conta.</div>
+        <p class="sub">Um diagnóstico completo gasta ${brl(custoIa)} de inteligência artificial.
+          O servidor custa ${brl(custoFixo)} por mês e cobra o mesmo atendendo uma ou cinquenta,
+          então quanto mais clientes, menor o custo de cada uma.</p>
         <div class="acoes">
           <a class="botao" href="/setup">Continuar</a>
           <a class="botao calmo" href="/setup/precificacao">Mudar os números</a>
