@@ -71,7 +71,7 @@ export default async function rotasReiniciar(app: FastifyInstance) {
       await c.query('TRUNCATE mentoradas CASCADE');
       await c.query('TRUNCATE exemplos, exemplo_saidas, materiais, skills, modulo_estado, observacoes, rodadas');
       await c.query("UPDATE prompts SET texto_mentora = NULL, versao_mentora = 0");
-      await c.query("DELETE FROM config WHERE chave IN ('perfil','precificacao','precificacao_v2','pasta_pc','consentimento_textos','consentimento_versao')");
+      await c.query("DELETE FROM config WHERE chave IN ('perfil','precificacao','precificacao_v2','precificacao_v3','pasta_pc','consentimento_textos','consentimento_versao')");
       await c.query('TRUNCATE mentora CASCADE');
       await c.query("UPDATE setup_etapas SET concluida = false, concluida_em = NULL, dados = '{}'::jsonb");
       await c.query('COMMIT');
