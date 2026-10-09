@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Hub de Diagnóstico — plataforma de diagnóstico de posicionamento para mentoria médica",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch --experimental-strip-types src/server.ts",
     "start": "node --experimental-strip-types src/server.ts",

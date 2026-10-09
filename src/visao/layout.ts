@@ -103,9 +103,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   .capa{padding:28px 16px}
   .capa h1{font-size:25px}
   .trilha{display:none}
-  .acoes{position:sticky;bottom:0;background:var(--papel);padding:12px 0;
-    margin:22px -16px 0;padding-left:16px;padding-right:16px;
-    border-top:1px solid var(--linha)}
+  /* Barra de ação fixa no rodapé, acima do teclado virtual. A folga embaixo do
+     formulário existe para o último campo não ficar escondido atrás dela. */
+  form{padding-bottom:12px}
+  .acoes{position:sticky;bottom:0;z-index:5;background:var(--papel);
+    margin:22px -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--linha);box-shadow:0 -6px 14px -10px rgba(28,34,49,.35)}
+  .cartao{padding-bottom:84px}
 }
 @media(prefers-reduced-motion:no-preference){.cartao{transition:border-color .15s}}
 `;

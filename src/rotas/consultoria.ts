@@ -399,11 +399,9 @@ export default async function rotasConsultoria(app: FastifyInstance) {
             : `<div class="cartao">
                 <form method="post" action="/c/modulo/${n}/aceitar">
                   <h3>Quer mudar alguma coisa?</h3>
-                  <p class="sub">Edite à vontade. O texto abaixo é o que vai para o seu Mapa.</p>
-                  <div class="campo">
-                    <label for="editado">O texto</label>
-                    <textarea id="editado" name="editado" style="min-height:300px">${esc(JSON.stringify(conteudo, null, 2))}</textarea>
-                  </div>
+                  <p class="sub">Reescreva o que não soar como você. O que ficar aqui é o que vai
+                    para o seu Mapa.</p>
+                  ${camposEditaveis(conteudo)}
                   <div class="acoes">
                     <button type="submit">Está bom, seguir</button>
                     <a class="botao calmo" href="/c/modulo/${n}/regerar">Montar outro rascunho</a>
@@ -429,15 +427,7 @@ export default async function rotasConsultoria(app: FastifyInstance) {
       );
       if (!g) return res.redirect(`/c/modulo/${n}`);
 
-      let editado: any = null;
-      const bruto = (req.body.editado ?? '').trim();
-      if (bruto) {
-        try {
-          editado = JSON.parse(bruto);
-        } catch {
-          editado = { texto: bruto };
-        }
-      }
+      const editado = remontar(req.body, g.conteudo);
       const mudou = editado && JSON.stringify(editado) !== JSON.stringify(g.conteudo);
       if (mudou) {
         // Histórico de verdade: geracoes não é append-only, edicoes é.
@@ -526,6 +516,108 @@ export default async function rotasConsultoria(app: FastifyInstance) {
       `<div class="cartao"><p class="sub">Peça para a sua mentora enviar o link do seu diagnóstico.</p></div>`,
     );
   }
+}
+
+function rotuloDe(chave: string): string {
+  return chave.replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase());
+}
+
+/**
+ * Campos de edição em português, um por item, em vez de uma caixa com JSON cru.
+ * Ela é médica, não programadora: chave e colchete não podem aparecer na tela dela.
+ *
+ * Cada campo carrega o tipo no próprio nome para a remontagem saber o que fazer:
+ *   txt__chave    texto simples
+ *   lst__chave    lista, um item por linha
+ *   obj__chave    estrutura aninhada, editada como texto corrido
+ */
+function camposEditaveis(c: any): string {
+  if (c === null || typeof c !== 'object' || Array.isArray(c)) {
+    return `<div class="campo"><label for="txt__texto">O texto</label>
+      <textarea id="txt__texto" name="txt__texto">${esc(typeof c === 'string' ? c : JSON.stringify(c))}</textarea></div>`;
+  }
+
+  return Object.entries(c)
+    .map(([k, v]) => {
+      const id = `_${k}`;
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+        const curto = String(v).length < 90;
+        const entrada = curto
+          ? `<input id="${esc(id)}" name="txt__${esc(k)}" type="text" value="${esc(String(v))}">`
+          : `<textarea id="${esc(id)}" name="txt__${esc(k)}">${esc(String(v))}</textarea>`;
+        return `<div class="campo"><label for="${esc(id)}">${esc(rotuloDe(k))}</label>${entrada}</div>`;
+      }
+      if (Array.isArray(v) && v.every((i) => typeof i === 'string' || typeof i === 'number')) {
+        return `<div class="campo"><label for="${esc(id)}">${esc(rotuloDe(k))}</label>
+          <div class="dica">Um por linha. Apague a linha para tirar o item.</div>
+          <textarea id="${esc(id)}" name="lst__${esc(k)}">${esc(v.join('\n'))}</textarea></div>`;
+      }
+      // Estrutura aninhada: cada item vira um bloco de texto separado por linha em branco.
+      const itens = Array.isArray(v) ? v : [v];
+      const texto = itens
+        .map((i: any) =>
+          typeof i === 'object' && i !== null
+            ? Object.entries(i)
+                .map(([k2, v2]) => `${rotuloDe(k2)}: ${Array.isArray(v2) ? v2.join('; ') : v2}`)
+                .join('\n')
+            : String(i),
+        )
+        .join('\n\n');
+      return `<div class="campo"><label for="${esc(id)}">${esc(rotuloDe(k))}</label>
+        <div class="dica">Separe cada item por uma linha em branco.</div>
+        <textarea id="${esc(id)}" name="obj__${esc(k)}" style="min-height:160px">${esc(texto)}</textarea></div>`;
+    })
+    .join('');
+}
+
+/** Remonta o objeto a partir dos campos, preservando a forma do original. */
+function remontar(corpo: Record<string, string>, original: any): any {
+  const chaves = Object.keys(corpo).filter((k) => /^(txt|lst|obj)__/.test(k));
+  if (!chaves.length) return null;
+
+  if (chaves.length === 1 && chaves[0] === 'txt__texto' && typeof original !== 'object') {
+    return (corpo['txt__texto'] ?? '').trim();
+  }
+
+  const saida: Record<string, any> = {};
+  for (const campo of chaves) {
+    const tipo = campo.slice(0, 3);
+    const chave = campo.slice(5);
+    const valor = corpo[campo] ?? '';
+    if (tipo === 'txt') {
+      const antes = original?.[chave];
+      saida[chave] =
+        typeof antes === 'number' && valor.trim() !== '' && Number.isFinite(Number(valor))
+          ? Number(valor)
+          : typeof antes === 'boolean'
+            ? valor === 'true'
+            : valor.trim();
+    } else if (tipo === 'lst') {
+      saida[chave] = valor
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+    } else {
+      // Blocos separados por linha em branco, cada linha "Rótulo: valor".
+      const blocos = valor
+        .split(/\n\s*\n/)
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const reconstruidos = blocos.map((b) => {
+        const obj: Record<string, string> = {};
+        let solto = '';
+        for (const linha of b.split('\n')) {
+          const m = linha.match(/^([^:]{1,60}):\s*(.*)$/);
+          if (m) obj[m[1].trim().toLowerCase().replace(/\s+/g, '_')] = m[2].trim();
+          else solto += (solto ? ' ' : '') + linha.trim();
+        }
+        if (solto) obj.texto = solto;
+        return Object.keys(obj).length ? obj : b;
+      });
+      saida[chave] = Array.isArray(original?.[chave]) ? reconstruidos : reconstruidos[0] ?? '';
+    }
+  }
+  return saida;
 }
 
 /** Renderiza o JSON do modelo de um jeito legível, sem assumir formato fixo. */
